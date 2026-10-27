@@ -1,15 +1,18 @@
 # 发布到 npm
 
-> **当前状态（2026-10-27）**
+> **当前状态（2026-10-27 18:45）**
 >
-> - 仓库已建：https://github.com/cococo1ng/dsh-jianxian-widget （public，默认分支 main）
-> - main 已推送；ci.yml 会在 push / PR 时跑构建 + 5 道守卫（已补 Playwright 安装步骤，
->   否则几何守卫在 runner 上必红）
-> - package.json / plugin/package.json 的 
+> - **已发布**：dsh-jianxian-widget@4.27.1 上线，latest 指向它；
+>   https://www.npmjs.com/package/dsh-jianxian-widget （MIT，11 个文件，5.1 MB tgz / 6.8 MB 解包）
+> - 仓库：https://github.com/cococo1ng/dsh-jianxian-widget （public，默认分支 main，CI 绿）
+> - 
 epository / homepage / ugs 已填
-> - **还没做**：npm 的 trusted publisher 四字段、首发时打开 Allow publish、打 tag 触发发布
+> - 首发用的是 **granular token（Bypass 2FA）**，因为账号 2FA 不是 TOTP，CLI 拿不到 6 位码；
+>   这个 token 用完即删，**不要留在 .npmrc 里**
+> - **待办**：Trusted Publisher 四字段已填、Allow publish 已勾，但提交停在「Confirm password」，
+>   需要在 npm 页面上输一次密码才会保存；保存后 git tag v* 就能自动发布
 >
-> 首发命令（配置好 npm 之后）：git tag v4.27.1 && git push origin v4.27.1
+> 后续发版（OIDC 配好之后）：git tag v4.27.2 && git push origin v4.27.2
 
 包名 `dsh-jianxian-widget`（npm 上未被占用）。发布方式两条，**推荐 A**。
 
