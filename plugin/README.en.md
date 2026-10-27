@@ -4,6 +4,13 @@ An always-on widget in the bottom-right corner of the DSH web UI: a white-haired
 He watches your balance, keeps the ledger, reminds you to sleep — and occasionally flies a lap around the screen.
 One host plugin (8 routes, all on `webServer`) plus one pure front-end widget; **no agent tools are registered and no tokens are spent**.
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/cococo1ng/dsh-jianxian-widget/main/docs/img/hero-compare.png" alt="White robe (light theme) / ink robe (dark theme)" width="820">
+</p>
+<p align="center">
+  <img src="https://raw.githubusercontent.com/cococo1ng/dsh-jianxian-widget/main/docs/img/panel-compare.png" alt="Data tab: 中文 / English" width="760">
+</p>
+
 > 中文版见 [README.md](README.md)。
 
 | Item | Value |

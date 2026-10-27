@@ -3,6 +3,13 @@
 DSH 网页界面右下角的常驻挂件：白发墨金的剑修大师兄。替你盯余额、记消耗、提醒该睡了，也会自己御剑绕屏飞一圈。
 一个宿主插件（8 条路由，全在 `webServer` 上）+ 一个纯前端挂件；**不向 agent 注册工具、不占 token**。
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/cococo1ng/dsh-jianxian-widget/main/docs/img/hero-compare.png" alt="白衣（浅色主题）/ 黑衣（深色主题）" width="820">
+</p>
+<p align="center">
+  <img src="https://raw.githubusercontent.com/cococo1ng/dsh-jianxian-widget/main/docs/img/panel-compare.png" alt="数据页：中文 / English" width="760">
+</p>
+
 > English edition: [README.en.md](README.en.md)。
 
 | 项 | 值 |
