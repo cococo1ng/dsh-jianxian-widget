@@ -1,0 +1,41 @@
+# —— 依赖 / 构建 ——
+node_modules/
+__pycache__/
+*.pyc
+*.log
+
+# —— 本机开发工具（不外发）——
+tools/
+_review/
+_orig-download/
+assets-backup-*/
+assets/assets-backup-*/
+assets/talisman6/
+assets/talisman7/
+assets/talisman8/
+src/_backup_before_del_gaze/
+plugin/*.bak*
+plugin/icon-old.png
+plugin/icon-p.png
+plugin/icon-before-v2logo.png
+plugin/icon-512-original.png
+
+# —— 打包产物 ——
+release/
+*.tgz
+*.zip
+
+# —— 系统 ——
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 冒烟输出（每次跑都会变），展示图放 docs/img/
+verify/*.png
+.npmrc
+plugin/.npmrc
+
+# 临时探测脚本（不进仓库）
+_tmp/
+_tmp_*
+_tmp-*

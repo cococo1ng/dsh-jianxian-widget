@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>青云剑仙 · 网页版自测台</title>
+<style>
+  html,body{margin:0;padding:0;background:#f2f4f7;color:#22303c;font-family:"Microsoft YaHei",system-ui,sans-serif}
+  header{height:56px;background:#fff;border-bottom:1px solid #e2e6ea;position:sticky;top:0;z-index:99999;display:flex;align-items:center;gap:10px;padding:0 18px;box-shadow:0 1px 6px rgba(0,0,0,.06)}
+  header b{font-size:15px}
+  main{max-width:720px;margin:0 auto;padding:28px 18px 140px}
+  h1{font-size:20px;margin:0 0 8px}
+  p{line-height:1.7;color:#5b6b78}
+  .fake-card{background:#fff;border:1px solid #e2e6ea;border-radius:10px;padding:14px;margin-top:16px}
+  .fake-card h2{font-size:14px;margin:0 0 6px}
+  #probe{position:fixed;left:12px;top:70px;z-index:2;font:12px/1.5 ui-monospace,monospace;background:#111a22;color:#9fe7f5;padding:8px 10px;border-radius:8px;white-space:pre}
+</style>
+</head>
+<body>
+<header><b>模拟站点</b> · 顶栏 z-index 99999（考挂件层级）</header>
+<main>
+  <h1>青云剑仙 · 网页版自测台</h1>
+  <p>这个页面只做一件事：用普通网页的环境把 <code>dist/xjj.user.js</code> 跑起来，看人物能不能挂上、面板能不能开、配置能不能写进 localStorage。</p>
+  <div class="fake-card"><h2>已有内容</h2><p>页面本来就有滚动内容，用来确认挂件是 position:fixed、不占文档流。</p></div>
+  <div class="fake-card"><h2>检查项</h2><p>① #xjj-web-root 存在 ② 39 张 sprite 都在 ③ 点人物能开面板 ④ 配置写进 localStorage</p></div>
+</main>
+<pre id="probe">probe: booting…</pre>
+<script src="/vendor/react.production.min.js"></script>
+<script src="/vendor/react-dom.production.min.js"></script>
+<script src="/dist/xjj.user.js"></script>
+<script>
+  window.addEventListener('load', function () {
+    setTimeout(function () {
+      var root = document.querySelector('#xjj-web-root .xjj-root');
+      var sprites = document.querySelectorAll('#xjj-web-root .xjj-sprite');
+      var gear = document.querySelector('#xjj-web-root .xjj-gear');
+      var cfg = null;
+      try { cfg = localStorage.getItem('xjj.cfg.v1'); } catch (e) {}
+      document.getElementById('probe').textContent =
+        'probe: root=' + (!!root) +
+        ' sprites=' + sprites.length +
+        ' gear=' + (!!gear) +
+        ' cfg=' + (cfg ? cfg.length + 'B' : 'none') +
+        ' host=' + (window.__XJJ_HOST__ ? window.__XJJ_HOST__.version : 'MISSING');
+    }, 1200);
+  });
+</script>
+</body>
+</html>

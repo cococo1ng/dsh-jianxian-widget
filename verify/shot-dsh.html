@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>青云剑仙 · DSH 版（干净背景）</title>
+<style>
+  html,body{height:100%;margin:0}
+  body{
+    background:
+      radial-gradient(120% 90% at 78% 18%, rgba(79,179,200,.20), transparent 60%),
+      radial-gradient(90% 80% at 20% 90%, rgba(217,164,65,.10), transparent 62%),
+      linear-gradient(160deg,#0b1116 0%,#121b23 55%,#0a0f14 100%);
+  }
+</style>
+</head>
+<body>
+<script src="/vendor/react.production.min.js"></script>
+<script src="/vendor/react-dom.production.min.js"></script>
+<script>
+  // 假宿主：给一组像真的数字，仅为出图
+  const DAY = new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10)
+  const prev = ['2026-10-20', '2026-10-21', '2026-10-22', '2026-10-23', '2026-10-24', '2026-10-25']
+  const hist = prev.map((d, i) => ({ date: d, used: [12.4, 27.1, 22.3, 13.8, 26.5, 18.2][i], turns: [18, 31, 26, 19, 33, 24][i] }))
+  hist.push({ date: DAY, used: 5.67, turns: 3 })
+  const state = {
+    ok: true, balance: 12.34, recharge: 10, bonus: 2.34, currency: 'CNY', source: 'api-key',
+    balanceError: null, todayUsed: 5.67, todayUsedByBalance: 5.6, todayTurns: 3,
+    history: hist, lastTurn: { amount: 1.23, tokens: 4567, model: 'deepseek-flash', ts: Date.now() },
+    todayStart: 17, day: DAY, busy: false,
+    peak: { peak: true, label: '高峰价', next: '谷价', window: '工作日高峰 9–12 / 14–18', nextInMs: 3600e3 },
+    updatedAt: new Date().toISOString(),
+  }
+  const routes = {
+    '/xjj/state.json': () => state,
+    '/xjj/turn.json': () => ({ ok: true, seq: 0, amount: null, busy: false }),
+    '/xjj/wait.json': () => ({ ok: true, pending: null, sessionName: '' }),
+    '/xjj/config.json': () => ({ ok: true, config: null, path: '~/.dsh/.xjj-config.json' }),
+    '/xjj/usage.json': () => ({ ok: true, range: 'today', q: '', totals: { amount: 5.67, turns: 3, tokens: 0 }, byModel: [], days: [{ date: DAY, used: 5.67, turns: 3 }], items: [], itemCount: 0, retention: { turnsLive: 3, turnsCap: 500, turnDays: 90, dailyDays: 6, dailyCap: 365, archived: 0, archiveCap: 20000 } }),
+    '/xjj/about.json': () => ({ ok: true, version: '4.15.0', files: {}, build: { stale: false }, ledger: { day: DAY, todayUsed: 5.67, turns: 3, days: 6 }, wait: { pending: null, sessionName: '' }, routes: [], now: new Date().toISOString() }),
+  }
+  window.fetch = function (url, init) {
+    const path = String(url).split('?')[0]
+    return Promise.resolve(new Response(JSON.stringify(routes[path] ? routes[path]() : { ok: false }), { status: 200, headers: { 'content-type': 'application/json' } }))
+  }
+  window.__ModuleLoader__ = { load(def) { window.__xjjDef = def } }
+</script>
+<script src="/plugin/client.js"></script>
+<script>
+  window.addEventListener('load', function () {
+    const mod = window.__xjjDef.factory(function (n) { return n === 'react' ? window.React : window.ReactDOM })
+    const host = document.createElement('div')
+    host.id = 'xjj-dsh-root'
+    document.documentElement.appendChild(host)
+    let mounted = false
+    mod.apply({
+      effect(fn) { try { const d = fn(); return typeof d === 'function' ? d : function () {} } catch (e) { return function () {} } },
+      locale: { register() {}, bind() { return function (k) { return k } }, getLocale() { return { id: 'zh' } } },
+      slots: { inject(n, cb) { return cb() }, register(spec, Comp) { if (!mounted) { mounted = true; ReactDOM.createRoot(host).render(React.createElement(Comp)) } return function () {} } },
+    })
+  })
+</script>
+</body>
+</html>

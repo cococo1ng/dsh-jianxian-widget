@@ -1,0 +1,14 @@
+{
+  "_comment": "立绘几何的唯一真源：渲染层只从这里读，不在代码里写裸数字。改这里之后跑 python verify/geometry.py（它按同一份常量量 DOM）。",
+  "rootW": 176,
+  "rootH": 270,
+  "originY": 0.92,
+  "headGap": 9,
+  "gearBase": 15,
+  "gearMargin": 2,
+  "poseFit": {
+    "sleep": 0.86,
+    "forge": 0.84,
+    "doze": 0.86
+  }
+}

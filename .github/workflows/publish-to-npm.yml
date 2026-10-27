@@ -1,0 +1,47 @@
+name: publish to npm
+
+# 只在打 tag（v*）或手动触发时发布。
+# 用 npm 的 Trusted Publishing（OIDC）：仓库里不放任何 npm token，也没有能泄漏的长期凭证，
+# 发布的包自动带 provenance（签名绑定这次 workflow run 与 commit）。
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+  id-token: write # OIDC：让 npm 认这是本仓库的 workflow，不用 token
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # npm 11.5.1+ 才支持 trusted publishing；Node 24 自带 npm 11.x
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 安装 Playwright（几何/冒烟守卫要真浏览器）
+        run: |
+          python -m pip install --upgrade pip
+          pip install playwright
+          python -m playwright install chromium
+      - name: 重建产物（免得发布的是旧 client.js）
+        run: python build.py --target all
+
+      - name: 五道守卫
+        run: npm test
+
+      - name: 校验版本与包名
+        run: |
+          node -e "const p=require('./plugin/package.json'); if(p.private) {console.error('package.json 还有 private:true，npm 会拒绝发布'); process.exit(1)}; console.log('package:', p.name, p.version)"
+
+      - name: 发布到 npm
+        run: npm publish ./plugin

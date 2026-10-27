@@ -1,0 +1,12 @@
+* text=auto eol=lf
+
+*.webp binary
+*.wav  binary
+*.png  binary
+*.jpg  binary
+*.ico  binary
+
+# 构建产物：diff 里不用展示
+plugin/client.js    linguist-generated=true
+dist/xjj.user.js    linguist-generated=true
+vendor/*.js         linguist-vendored=true

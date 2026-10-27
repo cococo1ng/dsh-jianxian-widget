@@ -1,0 +1,51 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+
+jobs:
+  build-and-test:
+    # 项目在 Windows 上开发与验证；宿主半身是纯 Node，这里保持一致，避免路径/换行差异造成假红
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 安装 Playwright（几何/冒烟守卫要真浏览器）
+        run: |
+          python -m pip install --upgrade pip
+          pip install playwright
+          python -m playwright install chromium
+      - name: 构建两个产物
+        run: python build.py --target all
+
+      - name: 语法检查
+        run: |
+          node --check plugin/client.js
+          node --check dist/xjj.user.js
+
+      - name: 五道守卫
+        run: npm test
+
+      - name: 上传产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: artifacts
+          path: |
+            plugin/client.js
+            dist/xjj.user.js
+
+      - name: 产物大小
+        run: |
+          Get-Item plugin/client.js, dist/xjj.user.js | Select-Object Name, Length
+        shell: pwsh

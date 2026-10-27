@@ -1,0 +1,74 @@
+{
+  "name": "dsh-jianxian-widget",
+  "version": "4.27.1",
+  "description": "右下角的青云剑仙：白发墨金的大师兄，会御剑、会打坐、会守炉，也会催你喝水。39 个姿态（23 个常驻 + 16 帧剑舞），20 句闲聊各配姿态与音效、不连说同一句；标题栏余额四档变色（≥50 绿、20–50 黄、<20 红、低于告急阈值呼吸鲜红）。DSH 等你答话/点头时会冒泡喊你一声（同一次挂起只吵一次）。点人物走气泡序列（文本 / 余额 / 今日已用 / 峰谷档位 / 加权随机 / 并列加权），文案与逐行样式写在 .xjj-config.json 里、可手改；「数据」页给余额、今日轮数、平均每轮与最近一笔，「声音」页 10 种音效逐项开关，「外观」页调人物大小与 14 件法宝，「提醒」页管深夜劝睡、余额告急、每轮消耗、提问/授权与喝水歇眼，「账本」页看今日/近7天/全部的消费、模型占比与逐条明细（可搜），「提醒」页可设今日预算，「更多」页可自检版本与构建是否落后于模板。面板可拖动、贴边翻边、贴左镜像；写配置只认本机（须带 x-xjj-write 标记头）。全部素材内联，不依赖外部资源。",
+  "type": "module",
+  "main": "index.js",
+  "icon": "./icon.png",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.png"
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "cordis.patch.yml",
+    "locale/*.json",
+    "icon.png",
+    "README.md",
+    "README.en.md",
+    "screenshot.png",
+    "screenshots.json"
+  ],
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "widget",
+    "desktop-pet",
+    "jianxian",
+    "xianxia"
+  ],
+  "peerDependencies": {
+    "@deepseek-ai/dsh-host-webserver": ">=0.1.0-rc.6",
+    "@deepseek-ai/dsh-credentials": ">=0.1.0-rc.6"
+  },
+  "peerDependenciesMeta": {
+    "@deepseek-ai/dsh-credentials": {
+      "optional": true
+    }
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org",
+    "access": "public"
+  },
+  "license": "MIT",
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-layout"
+      ]
+    }
+  },
+  "scripts": {
+    "test": "node test-teeth.mjs",
+    "test:guard": "node test-routes.mjs && node test-billing.mjs",
+    "test:audit": "node audit-teeth.mjs && node audit-teeth.mjs --selftest",
+    "test:copy": "node check-copy.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cococo1ng/dsh-jianxian-widget.git"
+  },
+  "homepage": "https://github.com/cococo1ng/dsh-jianxian-widget#readme",
+  "bugs": {
+    "url": "https://github.com/cococo1ng/dsh-jianxian-widget/issues"
+  }
+}

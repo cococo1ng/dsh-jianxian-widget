@@ -1,0 +1,7 @@
+{
+  "note": "模型可见面冻结清单。改动必须跑 node scripts/tool-surface.mjs --update，并在回报里写明理由。",
+  "budgetTokens": 4000,
+  "tools": [],
+  "commands": [],
+  "skills": []
+}

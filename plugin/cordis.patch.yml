@@ -1,0 +1,4 @@
+# 小剑仙挂件 —— 挂到 Web 界面的 bundle patch
+- insert:
+    - id: dsh-jianxian-widget
+      name: dsh-jianxian-widget

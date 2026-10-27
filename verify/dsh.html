@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>青云剑仙 · DSH 版回归台</title>
+<style>
+  body{margin:0;background:#f2f4f7;font-family:"Microsoft YaHei",system-ui,sans-serif;color:#22303c}
+  main{padding:24px;max-width:680px}
+  p{line-height:1.7;color:#5b6b78}
+</style>
+</head>
+<body>
+<main><h1 style="font-size:20px">DSH 版回归台</h1>
+<p>用假的 ModuleLoader + 假宿主接口跑 <code>plugin/client.js</code>，确认改了模板/版本号注入以后，DSH 产物照样能挂。</p></main>
+<script src="/vendor/react.production.min.js"></script>
+<script src="/vendor/react-dom.production.min.js"></script>
+<script>
+  // 假宿主：只回前端会问的那几个接口（形状与 plugin/index.js 一致）
+  const DAY = new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10)
+  const state = {
+    ok: true, balance: 12.34, recharge: 10, bonus: 2.34, currency: 'CNY', source: 'api-key',
+    balanceError: null, todayUsed: 5.67, todayUsedByBalance: 5.6, todayTurns: 3,
+    history: [{ date: DAY, used: 5.67, turns: 3 }], lastTurn: { amount: 1.23, tokens: 4567, model: 'deepseek-flash', ts: Date.now() },
+    todayStart: 17, day: DAY, busy: false,
+    peak: { peak: true, label: '高峰价', next: '谷价', window: '工作日高峰 9–12 / 14–18', nextInMs: 3600e3 },
+    updatedAt: new Date().toISOString(),
+  }
+  const routes = {
+    '/xjj/state.json': () => state,
+    '/xjj/turn.json': () => ({ ok: true, seq: 0, amount: null, busy: false }),
+    '/xjj/wait.json': () => ({ ok: true, pending: null, sessionName: '' }),
+    '/xjj/config.json': () => ({ ok: true, config: null, path: 'C:\\Users\\demo\\.dsh\\.xjj-config.json' }),
+    '/xjj/usage.json': () => ({ ok: true, range: 'today', q: '', totals: { amount: 0, turns: 0, tokens: 0 }, byModel: [], days: [{ date: DAY, used: 0, turns: 0 }], items: [], itemCount: 0, retention: { turnsLive: 0, turnsCap: 500, turnDays: 90, dailyDays: 0, dailyCap: 365, archived: 0, archiveCap: 20000 } }),
+    '/xjj/about.json': () => ({ ok: true, version: '4.14.0', files: {}, build: { stale: false }, ledger: { day: DAY, todayUsed: 0, turns: 0, days: 0 }, wait: { pending: null, sessionName: '' }, routes: [], now: new Date().toISOString() }),
+  }
+  window.fetch = function (url, init) {
+    const path = String(url).split('?')[0]
+    const body = (routes[path] ? routes[path]() : { ok: false, error: 'no route ' + path })
+    if (String((init || {}).method || 'GET').toUpperCase() === 'POST') body.ok = true
+    return Promise.resolve(new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } }))
+  }
+  window.__ModuleLoader__ = { load(def) { window.__xjjDef = def } }
+</script>
+<script src="/plugin/client.js"></script>
+<script>
+  window.addEventListener('load', function () {
+    const mod = window.__xjjDef.factory(function (n) { return n === 'react' ? window.React : window.ReactDOM })
+    const host = document.createElement('div')
+    host.id = 'xjj-dsh-root'
+    document.documentElement.appendChild(host)
+    let mounted = false
+    // 造一个和真实宿主一样的 LocaleFace：getSnapshot().active + subscribe，供"切语言立即生效"的验收
+    let __lang = new URLSearchParams(location.search).get('lang') || 'zh'
+    let __subs = []
+    window.__setLang = function (l) { __lang = l; __subs.slice().forEach(function (f) { try { f() } catch (e) {} }) }
+    mod.apply({
+      effect(fn) { try { const d = fn(); return typeof d === 'function' ? d : function () {} } catch (e) { return function () {} } },
+      locale: {
+        register() {},
+        bind() { return function (k) { return k } },
+        getSnapshot() { return { active: __lang, locales: ['zh', 'en'], revision: 0 } },
+        subscribe(fn) { __subs.push(fn); return function () { __subs = __subs.filter(function (f) { return f !== fn }) } },
+      },
+      slots: { inject(n, cb) { return cb() }, register(spec, Comp) { if (!mounted) { mounted = true; ReactDOM.createRoot(host).render(React.createElement(Comp)) } return function () {} } },
+    })
+  })
+</script>
+</body>
+</html>

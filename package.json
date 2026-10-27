@@ -1,0 +1,44 @@
+{
+  "name": "azure-cloud-sword-immortal",
+  "version": "4.27.1",
+  "private": true,
+  "description": "青云剑仙：DSH 插件 + 网页用户脚本，一套前端两个壳。23 个常驻、16 帧剑舞、14 件法宝、10 路音效。",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "python build.py --target all",
+    "build:dsh": "python build.py",
+    "build:web": "python build.py --target web",
+    "test": "npm run test:copy && npm run test:i18n && npm run test:docs && npm run test:config && npm run test:surface && npm run test:tokens && npm run test:audit && npm run test:guard && npm run test:geometry && npm run test:teeth",
+    "test:copy": "node check-copy.mjs",
+    "test:audit": "node audit-teeth.mjs && node audit-teeth.mjs --selftest",
+    "test:guard": "node test-routes.mjs && node test-billing.mjs",
+    "test:geometry": "python verify/geometry.py",
+    "test:teeth": "node test-teeth.mjs",
+    "release": "python scripts/release.py",
+    "test:i18n": "node check-i18n.mjs",
+    "test:config": "node --test test-config-merge.mjs",
+    "test:docs": "node check-docs.mjs",
+    "test:surface": "node scripts/audit-completeness.mjs",
+    "test:tokens": "node scripts/tool-surface.mjs && node scripts/tool-surface.mjs --selftest"
+  },
+  "keywords": [
+    "dsh-plugin",
+    "deepseek-harness",
+    "userscript",
+    "tampermonkey",
+    "desktop-pet",
+    "widget",
+    "xianxia"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cococo1ng/dsh-jianxian-widget.git"
+  },
+  "homepage": "https://github.com/cococo1ng/dsh-jianxian-widget#readme",
+  "bugs": {
+    "url": "https://github.com/cococo1ng/dsh-jianxian-widget/issues"
+  }
+}
