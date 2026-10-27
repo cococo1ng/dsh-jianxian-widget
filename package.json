@@ -2,7 +2,7 @@
   "name": "azure-cloud-sword-immortal",
   "version": "4.27.2",
   "private": true,
-  "description": "青云剑仙：DSH 插件 + 网页用户脚本，一套前端两个壳。23 个常驻、16 帧剑舞、14 件法宝、10 路音效。",
+  "description": "青云剑仙：DSH 插件 + 网页用户脚本，一套前端两个壳。23 个常驻 + 24 帧剑舞、14 件法宝、10 路音效；黑衣白衣随主题换，面板 6 页，气泡可逐行编辑。",
   "license": "MIT",
   "engines": {
     "node": ">=18"
