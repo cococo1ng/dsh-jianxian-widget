@@ -16,6 +16,7 @@ One frontend, two shells:
 | **Userscript** | Tampermonkey / Violentmonkey, any site | character, bubbles, reminders, peak/off-peak — no balance |
 
 <p align="center">
+  <img src="docs/img/panel-look.png" alt="DSH build: look tab (14 talisman skins)" width="300">
   <img src="docs/img/panel.png" alt="DSH build: data tab" width="300">
 </p>
 
