@@ -1,5 +1,16 @@
 # 发布到 npm
 
+> **当前状态（2026-10-27）**
+>
+> - 仓库已建：https://github.com/cococo1ng/dsh-jianxian-widget （public，默认分支 main）
+> - main 已推送；ci.yml 会在 push / PR 时跑构建 + 5 道守卫（已补 Playwright 安装步骤，
+>   否则几何守卫在 runner 上必红）
+> - package.json / plugin/package.json 的 
+epository / homepage / ugs 已填
+> - **还没做**：npm 的 trusted publisher 四字段、首发时打开 Allow publish、打 tag 触发发布
+>
+> 首发命令（配置好 npm 之后）：git tag v4.27.1 && git push origin v4.27.1
+
 包名 `dsh-jianxian-widget`（npm 上未被占用）。发布方式两条，**推荐 A**。
 
 ---
