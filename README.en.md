@@ -16,8 +16,11 @@ One frontend, two shells:
 | **Userscript** | Tampermonkey / Violentmonkey, any site | character, bubbles, reminders, peak/off-peak — no balance |
 
 <p align="center">
-  <img src="docs/img/panel-look.png" alt="DSH build: look tab (14 talisman skins)" width="300">
-  <img src="docs/img/panel.png" alt="DSH build: data tab" width="300">
+  <img src="docs/img/panel-compare.png" alt="Data tab: 中文 / English" width="760">
+</p>
+
+<p align="center">
+  <img src="docs/img/panel-look-compare.png" alt="Look tab: 中文 / English (14 talisman skins)" width="760">
 </p>
 
 ## Install

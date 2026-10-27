@@ -15,8 +15,11 @@
 | **网页用户脚本** | Tampermonkey / Violentmonkey，任何网页 | 人物、气泡、提醒、峰谷——不读余额 |
 
 <p align="center">
-  <img src="docs/img/panel-look.png" alt="DSH 版：外观页（14 件法宝皮肤）" width="300">
-  <img src="docs/img/panel.png" alt="DSH 版：数据页" width="300">
+  <img src="docs/img/panel-compare.png" alt="数据页：中文 / English" width="760">
+</p>
+
+<p align="center">
+  <img src="docs/img/panel-look-compare.png" alt="外观页：中文 / English（14 件法宝皮肤）" width="760">
 </p>
 
 ## 装
@@ -81,12 +84,15 @@ dsh plugin --profile desktop add /绝对路径/plugin
 | 提醒 | 余额告急、每轮消耗、提问/授权挂起、今日预算、深夜劝睡、喝水歇眼 |
 
 <p align="center">
-  <img src="docs/img/hero-white.png" alt="白衣版：浅色主题下的立绘与气泡" width="300">
-  <img src="docs/img/hero-ink.png" alt="黑衣版：黑夜主题下的立绘与气泡" width="300">
+  <img src="docs/img/hero-compare.png" alt="白衣（浅色主题）/ 黑衣（深色主题）" width="820">
 </p>
 
 <p align="center">
-  <img src="docs/img/about.png" alt="关于页：简介 / 怎么用 / 赞赏码" width="300">
+  <img src="docs/img/hero-lang.png" alt="同一套挂件：中文界面 / English UI" width="820">
+</p>
+
+<p align="center">
+  <img src="docs/img/about-compare.png" alt="关于页：中文 / English" width="760">
 </p>
 
 ### 姿态一览

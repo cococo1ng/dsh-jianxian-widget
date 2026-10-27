@@ -3,6 +3,17 @@
 本文件记录对外可见的变化。版本遵循 [语义化版本](https://semver.org/lang/zh-CN/)：
 `主版本` 改协议/数据格式，`次版本` 加功能，`修订号` 只修 bug。
 
+## 4.27.2 · 2026-10-27 · 英文界面截断修复 + 展示图换成对比图
+
+- **英文界面两处截断**：页签 `Ledger` 被省略成 `Ledg…`、标题 `Azure Cloud Sword Immortal` 被截成
+  `Azure Cloud Sword I…`。收紧英文标题栏（padding 13→10、gap 18→12、标题 12→11.5px、About 11→10.5px），
+  实测 `clientWidth = scrollWidth = 169`，两处都完整显示。
+- **docs/img 全部重拍并改成对比图**：`hero-compare`（白衣·浅色 / 黑衣·深色）、`hero-lang`（中文 / English）、
+  `panel-compare`（数据页中英）、`panel-look-compare`（外观页中英）、`about-compare`（关于页中英）。
+  带标签、等高并排，2× 截图后按内容裁边。
+- 删除被取代的旧图：`hero-shot` / `panel` / `panel-look` / `hero-white` / `hero-ink` / `about` / `about-dark` / `panel-dark`。
+- `npm test` 全链 exit=0。
+
 ## 4.27.1 · 2026-10-27 · 标题栏状态点与「关于」拉开距离
 
 - 4.27.0 里状态点紧贴「关于」（视觉间距 10px，看着像它的小圆点项目符号）。标题栏改 `gap:18px`；

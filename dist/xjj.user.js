@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         青云剑仙 · Azure Cloud Sword Immortal
 // @namespace    xjj-widget
-// @version      4.27.1
+// @version      4.27.2
 // @description  网页右下角的青云剑仙：白发墨金的大师兄，23 姿态 + 16 帧剑舞 + 14 件法宝 + 10 路音效，会催你喝水、劝你早睡、闲了剑舞御剑。全部素材内联，不联网、不上报、不占 token。
 // @author       Azure Cloud Sword Immortal
 // @match        *://*/*
@@ -39,12 +39,12 @@
  * 数据落点：localStorage（配置、微量账本），不联网、不上报。
  * 余额 / 账本 / 提问提醒在网页版里没有数据源 —— 状态里如实留空，界面显示「—」。
  *
- * 由 build.py 注入 4.27.1 后拼进 dist/xjj.user.js；DSH 版不使用本文件。
+ * 由 build.py 注入 4.27.2 后拼进 dist/xjj.user.js；DSH 版不使用本文件。
  */
 window.__XJJ_HOST__ = (function () {
   'use strict'
 
-  var VERSION = '4.27.1'
+  var VERSION = '4.27.2'
   var KEY_CFG = 'xjj.cfg.v1'
   var KEY_STATE = 'xjj.state.v1'
 
@@ -894,16 +894,19 @@ window.__XJJ_HOST__ = (function () {
       '.xjj-head b{font-size:12.5px;color:var(--xjj-text);letter-spacing:.6px;font-weight:600;flex:1 1 auto;min-width:0}',
       // 英文标题是一整句（Azure Cloud Sword Immortal）：272px 面板里必须一行放下。
       // 做法：字距归零、12px、去掉尾部 ◇（省 11px），再留 ellipsis 兜底（余额特别长时才截）
-      '.xjj-root.is-en .xjj-head b{font-size:12px;letter-spacing:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1 1 auto;min-width:0;max-width:none}',
+      '.xjj-root.is-en .xjj-head b{font-size:11.5px;letter-spacing:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1 1 auto;min-width:0;max-width:none}',
       '.xjj-root.is-en .xjj-head b::after{content:none}',
+      '.xjj-root.is-en .xjj-head b::before{content:none}',
       '.xjj-root.is-en .xjj-head span{flex:none;margin-left:0}',
+      '.xjj-root.is-en .xjj-head{gap:12px;padding:13px 10px 10px}',
+      '.xjj-root.is-en .xjj-head-about{font-size:10.5px;padding:2px 0}',
       '.xjj-head span{font-size:11px;color:var(--xjj-gold);font-family:"Microsoft YaHei",sans-serif;font-variant-numeric:tabular-nums}',
       '.xjj-head span.is-green{color:var(--xjj-green);font-weight:700;text-shadow:0 0 8px rgba(80,220,140,.45)}',
       '.xjj-head span.is-yellow{color:var(--xjj-yellow);font-weight:700;text-shadow:0 0 8px rgba(240,190,70,.45)}',
       '.xjj-head span.is-low{color:var(--xjj-red);font-weight:800;text-shadow:0 0 10px rgba(255,70,70,.55),0 0 2px rgba(255,180,180,.8)}',
       '.xjj-head span.is-critical{font-weight:800;animation:xjj-crit 1.15s ease-in-out infinite}',
       '@keyframes xjj-crit{0%,100%{color:var(--xjj-red-strong);text-shadow:0 0 4px rgba(255,20,20,.85),0 0 2px rgba(255,255,255,.55)}50%{color:var(--xjj-red-soft);text-shadow:0 0 14px rgba(255,60,60,.95),0 0 4px rgba(255,230,230,.8)}}',
-      '.xjj-tabs{display:flex;gap:6px;border-bottom:1px solid var(--xjj-divider);padding:0 12px;}',
+      '.xjj-tabs{display:flex;gap:4px;border-bottom:1px solid var(--xjj-divider);padding:0 10px;}',
       '.xjj-tab{flex:1 1 0;min-width:0;border:0;background:none;color:var(--xjj-text-dim);font-size:11.5px;padding:4px 0 9px;border-radius:0;cursor:pointer;font-family:inherit;letter-spacing:.4px;position:relative;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:color .15s ease}',
       '.xjj-tab:hover{color:var(--xjj-text-hover);background:none}',
       '.xjj-tab:focus-visible{outline:1px solid rgba(255,255,255,.55);outline-offset:-2px;border-radius:0}',
@@ -2917,7 +2920,7 @@ window.__XJJ_HOST__ = (function () {
             showSpecial([{ style: { fontSize: 11.5 }, modules: [{ type: 'text', text: __xjjT('路径已复制：') + p }] }], 6000);
           })),
           Row(__xjjT('自检'), Btn(__xjjT('产物 / 构建'), () => { setMenuOpen(false); showAbout(); })),
-          Row(__xjjT('版本'), h('b', { className: 'xjj-val', style: { color: 'var(--xjj-text-strong)' } }, 'v4.27.1')),
+          Row(__xjjT('版本'), h('b', { className: 'xjj-val', style: { color: 'var(--xjj-text-strong)' } }, 'v4.27.2')),
         ];
       })();
 
@@ -3276,7 +3279,7 @@ window.__XJJ_HOST__ = (function () {
             h('span', null, __xjjT('青云剑仙')),
             h('button', { className: 'xjj-mini', onClick: () => setAboutOpen(false) }, __xjjT('关闭'))),
           h('div', { className: 'xjj-ed-body xjj-ab-body' },
-            h('div', { className: 'xjj-ab-sub' }, __xjjT('黑衣与白衣双衣装 · 中英双语 · DSH 桌面挂件'), ' · v4.27.1'),
+            h('div', { className: 'xjj-ab-sub' }, __xjjT('黑衣与白衣双衣装 · 中英双语 · DSH 桌面挂件'), ' · v4.27.2'),
             h('p', { className: 'xjj-ab-lead' }, __xjjT('常驻屏幕右下角：盯余额、记消耗，也会催你早点睡')),
             h('div', { className: 'xjj-ab-sec' }, __xjjT('<能做什么>')),
             h('div', { className: 'xjj-ab-row' },

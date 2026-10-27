@@ -3,6 +3,18 @@
 User-visible changes. Versions follow [SemVer](https://semver.org/).
 Versions before 4.19.2 are documented in the Chinese [CHANGELOG.md](CHANGELOG.md).
 
+## 4.27.2 · 2026-10-27 · English truncation fixes + comparison screenshots
+
+- **Two truncations in the English UI**: the `Ledger` tab collapsed to `Ledg…` and the title
+  `Azure Cloud Sword Immortal` to `Azure Cloud Sword I…`. The English title bar was tightened (padding 13→10,
+  gap 18→12, title 12→11.5px, About 11→10.5px); measured `clientWidth = scrollWidth = 169`, both now fit.
+- **All of `docs/img` re-shot as comparison images**: `hero-compare` (white/light vs ink/dark), `hero-lang`
+  (中文 / English), `panel-compare`, `panel-look-compare`, `about-compare` — labelled, equal height,
+  captured at 2× and trimmed to content.
+- Removed the superseded images: `hero-shot`, `panel`, `panel-look`, `hero-white`, `hero-ink`, `about`,
+  `about-dark`, `panel-dark`.
+- `npm test` exits 0.
+
 ## 4.27.1 · 2026-10-27 · Breathing room between the status dot and "About"
 
 - In 4.27.0 the dot sat right against `About` (10px visual gap, reading like its own bullet). The title bar
