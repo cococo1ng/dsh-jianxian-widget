@@ -2,7 +2,7 @@
 // @name         青云剑仙 · Azure Cloud Sword Immortal
 // @namespace    xjj-widget
 // @version      4.27.2
-// @description  网页右下角的青云剑仙：白发墨金的大师兄，23 姿态 + 16 帧剑舞 + 14 件法宝 + 10 路音效，会催你喝水、劝你早睡、闲了剑舞御剑。全部素材内联，不联网、不上报、不占 token。
+// @description  网页右下角的青云剑仙：白发墨金的大师兄，23 姿态 + 24 帧剑舞 + 14 件法宝 + 10 路音效，会催你喝水、劝你早睡、闲了剑舞御剑。全部素材内联，不联网、不上报、不占 token。
 // @author       Azure Cloud Sword Immortal
 // @match        *://*/*
 // @run-at       document-idle
