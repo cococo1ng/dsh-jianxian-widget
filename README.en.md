@@ -1,5 +1,7 @@
 # Azure Cloud Sword Immortal (青云剑仙)
 
+> Chinese: [青云剑仙](README.md)
+
 > A resident widget for the bottom-right corner of your screen: a white-haired sword immortal
 > who flies on his blade, guards the furnace, reminds you to drink water — and tells you to
 > spend less when your balance drops.

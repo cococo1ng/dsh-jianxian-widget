@@ -1,5 +1,7 @@
 # 青云剑仙
 
+> English: [Azure Cloud Sword Immortal](README.en.md)
+
 > DSH 网页界面和任意网页右下角的常驻挂件：白发墨金的剑修大师兄。
 > 会御剑、会守炉、会催你喝水，也会盯着你的余额说"省着点用"。
 
