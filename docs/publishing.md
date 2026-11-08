@@ -15,6 +15,10 @@
 >   `need auth This command requires you to be logged in to https://registry.npmjs.org`。
 >   runner 是 ubuntu-26.04 / node v24.22.2 / npm 11.19.1（版本够），日志里
 >   `oidc` / `provenance` / `trusted` / `id-token` 关键词各 0 命中 —— 说明 npm 根本没走 OIDC 分支。
+>   已加一步「自检 OIDC」验证：**runner 确实注入了 `ACTIONS_ID_TOKEN_REQUEST_URL`**，
+>   说明 workflow 的 `id-token: write` 是生效的；也试过 `npm publish ./plugin --provenance`，
+>   仍旧 `ENEEDAUTH`。→ 于是可以确定：**卡点不在 GitHub 侧，而在 npm 账号侧没有可用的
+>   Trusted Publisher 记录**，npm 因此连 OIDC 交换的入口都不知道往哪发。
 > - **待办（都在网页上，CLI 做不了）**：
 >   1. npm 包页面 → Settings → Trusted Publisher：四个字段填好、**Allow publish** 勾上，
 >      然后输一次账号密码让「Confirm password」真正保存（历史上就卡在这一步）；
