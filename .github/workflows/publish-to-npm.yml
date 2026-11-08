@@ -54,4 +54,7 @@ jobs:
           echo "npm: $(npm --version) / node: $(node --version)"
 
       - name: 发布到 npm
-        run: npm publish ./plugin
+        # --provenance 会强制 npm 走 OIDC 那条路（生成 attestation）。
+        # 不加时实测 npm 11.19.1 压根不尝试 OIDC，直接报 ENEEDAUTH；
+        # 加上后如果 npm 侧 Trusted Publisher 没保存，会拿到 registry 明确报错而不是 ENEEDAUTH。
+        run: npm publish ./plugin --provenance
