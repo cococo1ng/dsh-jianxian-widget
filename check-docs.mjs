@@ -13,8 +13,12 @@
 // 用法：node check-docs.mjs
 import fs from 'node:fs'
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 
-const ROOT = path.dirname(new URL(import.meta.url).pathname.replace(/^\//, ''))
+// 路径必须走 fileURLToPath：Linux 上 URL.pathname 是 /home/runner/work/...，
+// 去掉前导斜杠就成了相对路径，readFileSync 会按 cwd 拼出
+// home/runner/work/.../package.json → ENOENT（GitHub Actions 的 ubuntu-latest 上就是这么红的）。
+const ROOT = path.dirname(fileURLToPath(import.meta.url))
 const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8')
 const pkg = JSON.parse(read('package.json'))
 const scripts = new Set(Object.keys(pkg.scripts || {}))

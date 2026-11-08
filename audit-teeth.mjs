@@ -18,6 +18,7 @@
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 const GUARDS = ['test-routes.mjs', 'test-billing.mjs']
 const isCommentLine = (line) => /^\s*(\/\/|\*|\/\*)/.test(line)
@@ -126,7 +127,8 @@ if (arg === '--selftest') {
   process.exit(bad ? 1 : 0)
 }
 
-const root = path.dirname(new URL(import.meta.url).pathname.replace(/^\//, ''))
+// 同 check-docs.mjs：Linux 上 URL.pathname 带前导斜杠，去斜杠会变成相对路径 → 找不到守卫文件
+const root = path.dirname(fileURLToPath(import.meta.url))
 const files = GUARDS.map((f) => path.join(root, f)).filter((f) => fs.existsSync(f))
 if (!files.length) {
   console.error('❌ 一个守卫文件都没找到（在 ' + root + '）')
