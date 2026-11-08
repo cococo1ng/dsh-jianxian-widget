@@ -1,30 +1,50 @@
 # 发布到 npm
 
-> **当前状态（2026-11-08 10:30）**
+> **当前状态（2026-11-08 11:20）**
 >
-> - **线上 latest**：`dsh-jianxian-widget@4.27.2`（npm 上只有 `0.0.0-stage` / `4.27.1` / `4.27.2` 三版，
->   后两版都不是 OIDC 发的：`dist` 里没有 attestations，`_npmUser` 是账号本人）
+> - **线上 latest**：`dsh-jianxian-widget@4.27.6`（2026-11-08 03:12 UTC 发出）
 >   https://www.npmjs.com/package/dsh-jianxian-widget （MIT，11 个文件，5.2 MB tgz / 6.9 MB 解包）
 > - 仓库：https://github.com/cococo1ng/dsh-jianxian-widget （public，默认分支 main，CI 绿）
 > - Repository / homepage / Bugs 三个字段已填
-> - 首发用的是 **granular token（Bypass 2FA）**，因为账号 2FA 不是 TOTP，CLI 拿不到 6 位码；
->   这个 token 用完即删，**不要留在 .npmrc 里**
-> - **代码侧已就绪**：4.27.6 已 commit（`4fe546c`）、打完 tag `v4.27.6` 并推上 GitHub。
->   `ci`（main 与 tag 各一次）全绿；`publish to npm` 第 1–8 步全过（含 `npm test`、版本校验），
->   **只有第 9 步 `npm publish ./plugin` 失败**：`error code ENEEDAUTH` /
->   `need auth This command requires you to be logged in to https://registry.npmjs.org`。
->   runner 是 ubuntu-26.04 / node v24.22.2 / npm 11.19.1（版本够），日志里
->   `oidc` / `provenance` / `trusted` / `id-token` 关键词各 0 命中 —— 说明 npm 根本没走 OIDC 分支。
->   已加一步「自检 OIDC」验证：**runner 确实注入了 `ACTIONS_ID_TOKEN_REQUEST_URL`**，
->   说明 workflow 的 `id-token: write` 是生效的；也试过 `npm publish ./plugin --provenance`，
->   仍旧 `ENEEDAUTH`。→ 于是可以确定：**卡点不在 GitHub 侧，而在 npm 账号侧没有可用的
->   Trusted Publisher 记录**，npm 因此连 OIDC 交换的入口都不知道往哪发。
-> - **待办（都在网页上，CLI 做不了）**：
->   1. npm 包页面 → Settings → Trusted Publisher：四个字段填好、**Allow publish** 勾上，
->      然后输一次账号密码让「Confirm password」真正保存（历史上就卡在这一步）；
->   2. 保存后重跑：Actions → publish to npm → Run workflow（或重新推一个 tag）。
+> - 4.27.6 已 commit（`9bb6bb1`）、打完 tag `v4.27.6` 并推上 GitHub；`ci`（main 与 tag 各一次）全绿
+> - **4.27.6 是本机用 granular token（Bypass 2FA）发的**，token 发完立刻吊销，`.npmrc` 已清干净
 >
-> 后续发版（OIDC 配好之后）：git tag v4.27.7 && git push origin v4.27.7
+> **为什么不用 OIDC（这条仍没走通，别再花时间重推 tag 试）**
+>
+> `publish to npm` workflow 第 9 步一直是 `error code ENEEDAUTH`。已排除的：
+> runner 是 ubuntu-26.04 / node v24.22.2 / npm 11.19.1（版本够）；`id-token: write` 已声明，
+> 自检步也确认 runner 注入了 `ACTIONS_ID_TOKEN_REQUEST_URL`；加 `--provenance` 后仍 `ENEEDAUTH`；
+> 日志里 `oidc` / `provenance` / `trusted` / `id-token` 关键词各 0 命中 —— npm 根本没进 OIDC 分支。
+> 结论：**卡点在 npm 账号侧还没有保存成功的 Trusted Publisher 记录**。网页上四个字段填完点
+> 「Set up connection」会跳到「Confirm password to continue」，而账号 2FA 不是 TOTP，
+> 密码那一步没有能过的路径。
+>
+> **现阶段发版流程（唯一可用的）**
+>
+> 1. `python build.py --target all` → `npm test` → `python scripts/release.py`（全绿）
+> 2. 改版本号 5 处（根/plugin 两个 `package.json`、两个 `plugin/README*.md` 的版本表、本文件）
+> 3. `git add -A && git commit && git tag vX.Y.Z`
+> 4. `git -c http.proxy=http://127.0.0.1:57777 -c https.proxy=http://127.0.0.1:57777 push origin main`
+>    （本机必须显式带代理，否则 `github.com:443` 直连超时）
+> 5. 去 npm 网页 `Settings → Access Tokens → Generate New Token` 建 **granular token**：
+>    Bypass 2FA 勾上（会弹一次密码）、权限 **Read and write (publish and stage)**、
+>    scope **All packages**、有效期 7 天
+> 6. 用它发布（不要写进 `~/.npmrc`，用临时 userconfig）：
+>    ```bash
+>    $env:NODE_AUTH_TOKEN='npm_xxxxxxxx'
+>    # 临时 npmrc 里只写 registry + //registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}
+>    npm publish ./plugin --access public --userconfig "$env:TEMP\xjj-pub.npmrc" \
+>      --registry=https://registry.npmjs.org --provenance=false
+>    ```
+> 7. **发完立刻吊销**（网页 `Delete token ending in xxxx`，或
+>    `DELETE https://registry.npmjs.org/-/npm/v1/tokens/token/<key>`），再删临时 npmrc
+> 8. 验：`npm view dsh-jianxian-widget dist-tags --registry=https://registry.npmjs.org`
+>
+> **注意 npm 的缓存坑**：刚发完头几分钟，`https://registry.npmjs.org/<pkg>/-/<pkg>-<ver>.tgz`
+> 可能仍 404（元数据已更新、tarball 还没铺开），而 `npm view` 已报新版本。
+> 加个查询串（`?t=<时间戳>`）能立刻取到；`npm install` 会在几十秒内自己好。
+>
+> 后续发版：`git tag v4.27.7 && git push origin v4.27.7`（CI 会跑完测试并停在 publish 那步）
 
 包名 `dsh-jianxian-widget`（npm 上未被占用）。发布方式两条，**推荐 A**。
 
