@@ -22,7 +22,7 @@
 > **现阶段发版流程（唯一可用的）**
 >
 > 1. `python build.py --target all` → `npm test` → `python scripts/release.py`（全绿）
-> 2. 改版本号 5 处（根/plugin 两个 `package.json`、两个 `plugin/README*.md` 的版本表、本文件）
+> 2. 改版本号 4 处（根/plugin 两个 `package.json`、两个 `plugin/README*.md` 的版本表）
 > 3. `git add -A && git commit && git tag vX.Y.Z`
 > 4. `git -c http.proxy=http://127.0.0.1:57777 -c https.proxy=http://127.0.0.1:57777 push origin main`
 >    （本机必须显式带代理，否则 `github.com:443` 直连超时）
