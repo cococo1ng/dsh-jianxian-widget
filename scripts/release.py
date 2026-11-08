@@ -109,7 +109,9 @@ def main():
         shutil.rmtree(RELEASE)
     os.makedirs(RELEASE, exist_ok=True)
     pack_out = run(["npm", "pack", "--json"], cwd=os.path.join(ROOT, "plugin"))
-    info = json.loads(pack_out)[0]
+    packed = json.loads(pack_out)
+    # npm 11 及以前：数组 [ {…} ]；npm 12 起：按包名做 key 的对象 { "dsh-…": {…} }
+    info = packed[0] if isinstance(packed, list) else next(iter(packed.values()))
     tgz_name = info["filename"]
     tgz = os.path.join(ROOT, "plugin", tgz_name)
     if not os.path.exists(tgz):

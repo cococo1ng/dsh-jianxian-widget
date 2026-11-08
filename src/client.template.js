@@ -173,7 +173,8 @@ window.__ModuleLoader__.load({
       return Math.round((gearBottom - headTop) + (scale - 1) * (originY - headTop));
     }
 
-    // 法宝：菜单按钮的外观（玉印最像权威）— 2026-10-25 重做，14 件
+    // 法宝：菜单按钮的外观（玉印最像权威）— 2026-10-25 重做 14 件；
+    // 2026-11-08 接进新出的 8 件（talisman10，铜钱剑弃用）= 22 件
     const TALISMANS = {
       seal: '__TALISMAN_SEAL__',
       mirror: '__TALISMAN_MIRROR__',
@@ -189,20 +190,36 @@ window.__ModuleLoader__.load({
       fan: '__TALISMAN_FAN__',
       tally: '__TALISMAN_TALLY__',
       lamp: '__TALISMAN_LAMP__',
+      sheath: '__TALISMAN_SHEATH__',
+      thunder: '__TALISMAN_THUNDER__',
+      slip: '__TALISMAN_SLIP__',
+      tassel: '__TALISMAN_TASSEL__',
+      pendant: '__TALISMAN_PENDANT__',
+      furnace: '__TALISMAN_FURNACE__',
+      orb: '__TALISMAN_ORB__',
+      lotus: '__TALISMAN_LOTUS__',
     };
-    const TALISMAN_ORDER = ['seal', 'mirror', 'bell', 'gourd', 'ruyi', 'pouch', 'vase', 'compass', 'flute', 'banner', 'fuchen', 'fan', 'tally', 'lamp'];
+    const TALISMAN_ORDER = ['seal', 'mirror', 'bell', 'gourd', 'ruyi', 'pouch', 'vase', 'compass', 'flute', 'banner', 'fuchen', 'fan', 'tally', 'lamp',
+      'sheath', 'thunder', 'slip', 'tassel', 'pendant', 'furnace', 'orb', 'lotus'];
     // v4.13：14 张用 1536 原图重做（rembg + pymatting + alpha 提亮）后，按"内容面积"再补一点，
     // 让 28px 下视觉重量接近：sqrt(0.62 / 面积)，上限 1.25（再多就顶出按钮）。
     // 系数统一按 sqrt(0.62 / 内容面积) 算，钳在 0.85–1.25：
     // 大的（方印/铜镜/罗盘）缩一点，小的（笛/瓶/葫芦）放一点，目标都是 62% 面积。
+    // v4.27.5：新接的 8 件（talisman10）改按 28px 下的实际墨迹覆盖率标定——
+    // 目标取老 14 件渲染后的中位数 0.323，二分反解 scale，再钳 0.85–1.25。
+    // 细长件（剑匣 / 剑穗）撑到上限，整块大件（玉简 / 丹炉 / 冰魄珠 / 青莲）落 0.85。
     const TALISMAN_FIT = {
       compass: 0.86, mirror: 0.87, bell: 0.87, fuchen: 0.87, seal: 0.89, ruyi: 0.89,
       pouch: 0.93, lamp: 1.00, banner: 1.03, tally: 1.05, fan: 1.08, gourd: 1.09,
       flute: 1.25, vase: 1.25,
+      sheath: 1.22, tassel: 1.25, thunder: 0.89, slip: 0.85, pendant: 0.92,
+      furnace: 0.85, orb: 0.85, lotus: 0.85,
     };
     const TALISMAN_NAMES = { seal: '青玉方印', mirror: '八卦铜镜', bell: '招魂铃', gourd: '紫金葫芦',
       ruyi: '玉如意', pouch: '乾坤袋', vase: '白瓷净瓶', compass: '司南罗盘', flute: '青玉笛', banner: '引魂幡',
-      fuchen: '白玉拂尘', fan: '山水折扇', tally: '玄木令牌', lamp: '长明灯' };
+      fuchen: '白玉拂尘', fan: '山水折扇', tally: '玄木令牌', lamp: '长明灯',
+      sheath: '剑匣', thunder: '五雷符', slip: '玉简', tassel: '剑穗',
+      pendant: '玉佩', furnace: '丹炉', orb: '冰魄珠', lotus: '青莲' };
 
     const SFX = {
       press: '__SFX_PRESS__',
@@ -2417,7 +2434,9 @@ window.__ModuleLoader__.load({
             // 背光颜色：auto = 跟衣装（黑衣紫 / 白衣红）
             h('div', { className: 'xjj-row', key: 'glow' },
               h('span', { className: 'xjj-lbl' }, '背光'),
-              h('div', { style: { display: 'flex', gap: 2, flex: '1 1 auto', justifyContent: 'flex-end' } },
+              // 六个选项在中文里一行放得下，英文 Match/Purple/Red/Cyan/Gold/Off 放不下（实测 299px > 246px，Off 被切），
+              // 所以允许换行：装不下就折到第二行，两个语言都不会裁字。
+              h('div', { style: { display: 'flex', gap: 2, flex: '1 1 auto', justifyContent: 'flex-end', flexWrap: 'wrap', minWidth: 0 } },
                 [['auto', '跟随'], ['purple', '紫'], ['red', '红'], ['cyan', '青'], ['gold', '金'], ['none', '关']].map((o) => h('button', {
                   key: o[0],
                   className: 'xjj-seg-b' + (glowPref === o[0] ? ' on' : ''),
@@ -2893,7 +2912,7 @@ window.__ModuleLoader__.load({
             h('div', { className: 'xjj-ab-row' },
               h('div', { className: 'xjj-ab-no' }, '1'),
               h('div', { className: 'xjj-ab-key' }, '形象'),
-              h('div', null, '23 个姿态 · 24 帧剑舞 · 黑衣/白衣随主题换 · 14 件法宝皮肤 · 10 路音效'),
+              h('div', null, '23 个姿态 · 24 帧剑舞 · 黑衣/白衣随主题换 · 22 件法宝皮肤 · 10 路音效'),
             ),
             h('div', { className: 'xjj-ab-row' },
               h('div', { className: 'xjj-ab-no' }, '2'),

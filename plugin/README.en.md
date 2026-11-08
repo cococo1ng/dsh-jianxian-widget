@@ -15,9 +15,9 @@ One host plugin (8 routes, all on `webServer`) plus one pure front-end widget; *
 
 | Item | Value |
 |---|---|
-| Version | **v4.27.2** |
+| Version | **v4.27.6** |
 | Poses | **23 standing poses** + **24-frame sword dance** |
-| Talismans (menu button skins) | 14 |
+| Talismans (menu button skins) | 22 |
 | Sounds | 10, each with its own switch |
 | Panel | 6 tabs (272 px wide) |
 | Pop-up windows | Bubble editor (420 px), About (420 px, opened from the title bar), self-check |
@@ -39,7 +39,7 @@ Right-click the character, or hover and click the talisman icon above his head, 
 | **Data** | Balance, used today, turns today (with average per turn), latest charge, low-balance threshold, refresh now, last-7-days bar chart |
 | **Ledger** | Today / last 7 days / all time; totals (¥ · turns · tokens), per-model share bars, per-turn details (date-time · model · amount), search, retention line |
 | **Sound** | Master switch, volume slider, 10 individual sound switches |
-| **Appearance** | 14 talismans, character size, bubble dwell 3–30 s, click bubbles, auto-mirror when docked left, back to bottom-right |
+| **Appearance** | 22 talismans, character size, bubble dwell 3–30 s, click bubbles, auto-mirror when docked left, back to bottom-right |
 | **Notice** | Low balance → per-turn cost → question alert → approval alert → daily budget → wellness → late-night nudge → notice interval → chatter interval |
 | **More** | Dance → **One lap** → Preview poses → Remind me → **Edit bubbles** → Copy path → Build / freshness → version (**Reset** sits in the editor header) |
 
@@ -131,6 +131,7 @@ The late-night 3-click bubble **fires only on the 3rd click and does not reset t
 
 - Click sequence: the 1st click = first bubble, then the queue advances; at the end, another click dismisses.
 - Modules: text / balance / used today / peak-off-peak / random line (weighted, no immediate repeat) / image.
+- **Peak module**: shows whether it is off-peak or peak right now, plus a live countdown to the next switch (`{cd}`, `mm:ss`, `h:mm:ss` past an hour). Off-peak renders green, peak renders orange — the colour follows the state, nothing to tune by hand. Variables: `{label}` `{next}` `{window}` `{cd}`; the default format is `{label} · 距{next} {cd}`.
 - Styling is **line-level** (size, colour, bold, italic, underline, letter-spacing, line-height). Only lines with `oFloor: true` may go below 14 px (for secondary info such as the third line of a cost bubble).
 - **Readability floor (enforced when rendering)**: font ≥ **14 px**; lightness < **0.82** is lifted; opacity < 0.92 is raised to 0.92; bubble width ≥ **296 px**. Your saved 11 px / dim grey are not rewritten — the floor only applies at render time.
 - Background: `style.bg` (unset = built-in ink background; the bubble tail follows it). **If you switch to a light background, darken the text at the same time.**
@@ -257,7 +258,7 @@ To make a front-end change take effect: `python build.py` → **Ctrl+F5** → ch
 
 Usable outside DSH as well: `python build.py --target web` emits `dist/xjj.user.js` from **the same template**; install it in Tampermonkey and the character appears in the bottom-right of ordinary web pages.
 
-- Shared: 23 poses / 24-frame dance / 14 talismans / 10 sounds / bubbles / panel / notices / peak-off-peak;
+- Shared: 23 poses / 24-frame dance / 22 talismans / 10 sounds / bubbles / panel / notices / peak-off-peak;
 - Degraded: balance, used today, ledger, per-turn cost, question/approval alerts (only the DSH host has these data sources; the web edition shows `—`);
 - Config lives in `localStorage` (per site), and `src/host.web.js` re-implements the six `/xjj/*.json` endpoints.
 

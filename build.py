@@ -127,7 +127,8 @@ TOKENS = {
     "__POSE_WHITE_DANCE16_22__": ("white/dance22.webp", "image/webp"),
     "__POSE_WHITE_DANCE16_23__": ("white/dance23.webp", "image/webp"),
     "__POSE_WHITE_DANCE16_24__": ("white/dance24.webp", "image/webp"),
-    # 法宝图标（菜单按钮可选皮肤）— 2026-10-25 全部重做，14 件
+    # 法宝图标（菜单按钮可选皮肤）— 2026-10-25 重做 14 件；
+    # 2026-11-08 追加 8 件（talisman10，铜钱剑弃用）= 22 件
     "__TALISMAN_SEAL__": ("talisman9/seal.webp", "image/webp"),
     "__TALISMAN_MIRROR__": ("talisman9/mirror.webp", "image/webp"),
     "__TALISMAN_BELL__": ("talisman9/bell.webp", "image/webp"),
@@ -142,6 +143,14 @@ TOKENS = {
     "__TALISMAN_FAN__": ("talisman9/fan.webp", "image/webp"),
     "__TALISMAN_TALLY__": ("talisman9/tally.webp", "image/webp"),
     "__TALISMAN_LAMP__": ("talisman9/lamp.webp", "image/webp"),
+    "__TALISMAN_SHEATH__": ("talisman10/sword-case.webp", "image/webp"),
+    "__TALISMAN_THUNDER__": ("talisman10/thunder-talisman.webp", "image/webp"),
+    "__TALISMAN_SLIP__": ("talisman10/jade-slip.webp", "image/webp"),
+    "__TALISMAN_TASSEL__": ("talisman10/sword-tassel.webp", "image/webp"),
+    "__TALISMAN_PENDANT__": ("talisman10/jade-token.webp", "image/webp"),
+    "__TALISMAN_FURNACE__": ("talisman10/cauldron.webp", "image/webp"),
+    "__TALISMAN_ORB__": ("talisman10/spirit-orb.webp", "image/webp"),
+    "__TALISMAN_LOTUS__": ("talisman10/lotus.webp", "image/webp"),
     "__SFX_BUBBLE__": ("bubble.wav", "audio/wav"),
     "__SFX_PANEL__": ("panel.wav", "audio/wav"),
     "__SFX_PICK__": ("pick.wav", "audio/wav"),
@@ -176,6 +185,34 @@ TAIL_NEW = "    };\n  });\n  __host.boot(__def);\n})();\n"
 
 def fail(msg):
     raise SystemExit("❌ " + msg)
+
+
+def atomic_write(path, text):
+    """先写临时文件、fsync，再 os.replace 顶上去，失败删临时文件。
+
+    为什么不能直接 open(path, "w")：那样会立刻把旧产物截成 0 字节，
+    构建中途崩掉/磁盘满/进程被杀，就留下半截 client.js —— 6MB 的产物
+    截断后插件加载直接崩，而 .bak 还是上一版的，等于两头都没了。
+
+    手法借鉴 YuJunZhiXue/dsh-purge（Apache-2.0，来源必须署名）。
+    那边是 node 版（lib/core.js 的 atomicWriteSync，tmp → rename → 补权限位）；
+    这里产物是数据文件、不需要可执行位，所以省掉 chmod 那步。
+    """
+    d = os.path.dirname(os.path.abspath(path))
+    os.makedirs(d, exist_ok=True)
+    tmp = "%s.%d.%s.tmp" % (path, os.getpid(), os.urandom(4).hex())
+    try:
+        with open(tmp, "w", encoding="utf-8", newline="\n") as f:
+            f.write(text)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp, path)  # Win32 上是 MoveFileExW(MOVEFILE_REPLACE_EXISTING)，原子
+    except BaseException:
+        try:
+            os.remove(tmp)
+        except OSError:
+            pass
+        raise
 
 
 def read_version():
@@ -346,7 +383,7 @@ def build_dsh(template, version, table=None):
         fail("有 %d 条中文没有译文（补 src/i18n/en.json）：\n  - %s" % (len(missing), "\n  - ".join(missing[:25])))
     # 预置脚本必须放在 ModuleLoader 之前：它定义 window.__xjjT
     out = i18n_prelude(table) + text
-    open(OUT_DSH, "w", encoding="utf-8", newline="\n").write(out)
+    atomic_write(OUT_DSH, out)
     return {"out": OUT_DSH, "bytes": os.path.getsize(OUT_DSH)}
 
 
@@ -395,8 +432,7 @@ def build_web(template, version, repo_url="", table=None):
     # 段与段之间必须留分号：host 结尾是 })()、模板开头是 (function(){…，
     # 少了分号会被解析成 "调用返回值"，报 "… is not a function"（踩过）
     out = banner + i18n_prelude(table) + host + "\n;\n" + text
-    os.makedirs(os.path.dirname(out_path), exist_ok=True)
-    open(out_path, "w", encoding="utf-8", newline="\n").write(out)
+    atomic_write(out_path, out)
     return {"out": out_path, "bytes": os.path.getsize(out_path)}
 
 

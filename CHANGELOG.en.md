@@ -3,6 +3,67 @@
 User-visible changes. Versions follow [SemVer](https://semver.org/).
 Versions before 4.19.2 are documented in the Chinese [CHANGELOG.md](CHANGELOG.md).
 
+## 4.27.6 · 2026-11-08 · The Backlight row no longer clips in English
+
+- **`Off` was cut off in the English UI**: the Look tab's Backlight row packs six options onto one line.
+  Chinese `跟随 / 紫 / 红 / 青 / 金 / 关` fits; English `Match / Purple / Red / Cyan / Gold / Off`
+  measured 299 px of content inside a 246 px row, so the trailing `Off` was clipped — you could not
+  switch the glow off, and nothing said so.
+- One-line fix: the option container gets `flexWrap: 'wrap'` and `minWidth: 0`, so it folds to a second
+  line when it does not fit. Chinese stays on one line (211 px / 211 px, no clipping); English wraps to
+  two (184 px / 184 px, all six buttons whole).
+- Layout only, the glow itself is untouched: colours, strength, the breathing animation and the meaning
+  of `glow: 'none'` are exactly as before. Nothing about `filter` / `drop-shadow` changed here either.
+- `check-copy` / `check-i18n` / `check-docs` green, full `npm test` exit=0.
+
+## 4.27.5 · 2026-11-08 · Eight more talismans
+
+- **Talismans go from 14 to 22**: added sword case, thunder talisman, jade slip, sword tassel,
+  jade pendant, cauldron, frost orb and lotus — all 256×256, sitting in the same menu-button skin
+  picker (Look tab; the panel wraps and scrolls on its own, layout untouched).
+  The coin sword made from the same batch is not included: its square hole smears at 28 px and the
+  body is too thin. It stays in `assets/talisman10/` and does not ship.
+- The scale factors are measured, not guessed: the existing 14 were rendered to 28×28 at their own
+  `TALISMAN_FIT`, and their alpha>24 ink coverage has a median of 0.323. The eight new images were
+  solved back to that target, clamped to 0.85–1.25. Thin pieces (sword case 1.22, sword tassel 1.25)
+  sit at the ceiling; chunky ones (jade slip / cauldron / frost orb / lotus) land at 0.85.
+- Docs updated: `meta.description` and `description` in `plugin/locale/zh.json` / `en.json`, the
+  feature tables and panel notes in both READMEs, the `description` of `package.json` /
+  `plugin/package.json`, and the about-panel line — 14 becomes 22 everywhere.
+- Additive only, no behaviour change: poses, sword dance, sounds, reminders and the peak/off-peak
+  maths are exactly as before. `check-copy` / `check-i18n` / `check-docs` green, full `npm test` exit=0.
+
+## 4.27.4 · 2026-11-08 · Document the peak/off-peak module
+
+- **The docs never mentioned a module that has always existed**: the bubble editor's `peak` module
+  (`{type:'peak'}`, there since 4.14) renders whether it is off-peak or peak right now plus a live
+  countdown to the next switch (`{label} · 距{next} {cd}`; `fmtCd` prints `mm:ss`, or `h:mm:ss` past an
+  hour), colours itself by state (off-peak `#6FE7B8` green / peak `#FFB265` orange, with deeper
+  `#1E7A4C` / `#A85A1A` on the light theme) and goes bold — yet none of the plugin-page description or the
+  two READMEs said a word about it.
+- Filled in: `plugin/locale/zh.json` / `en.json` (`meta.description` and `description`, the editor
+  capability sentence), the feature table in `README.md` / `README.en.md`, and the module list in
+  section 4 of `plugin/README.md` / `.en.md`.
+- Variables spelled out: `{label}` `{next}` `{window}` `{cd}`; default format `{label} · 距{next} {cd}`.
+- Copy only — no behaviour change and no change to the peak maths (weekdays 9–12 and 14–18 are peak;
+  weekends and statutory holidays are off-peak all day, exactly as before).
+  `check-copy` / `check-i18n` / `check-docs` green, full `npm test` exit=0.
+
+## 4.27.3 · 2026-10-30 · Plugin description catches up with the editor
+
+- **Stale copy**: the plugin-page description (`plugin/locale/zh.json` / `en.json`,
+  `meta.description`) still said “a per-line bubble editor with one-click reset”. Since 4.23.0, Reset
+  restores **only the target you have open** (no longer the whole queue), shows
+  “Reset?” first and runs after **one confirmation**, and the button sits in the editor header.
+- The description now also lists what the editor always did but the copy never said: add / remove /
+  reorder lines, in-line modules, and per-line size / color / bold / italic / underline
+  (`setStyle({fontSize|color|fontWeight|fontStyle|textDecoration})`).
+- `plugin/README.md` / `.en.md` already documented this correctly since 4.23.0
+  (“只重置当前目标并二次确认” / “per-target and confirmed”); this release brings the **plugin-page
+  description** in line, in both languages.
+- Copy only — no behaviour, style or panel changes. `check-copy` / `check-i18n` / `check-docs` green,
+  full `npm test` exit=0.
+
 ## 4.27.2 · 2026-10-27 · English truncation fixes + comparison screenshots
 
 - **Two truncations in the English UI**: the `Ledger` tab collapsed to `Ledg…` and the title

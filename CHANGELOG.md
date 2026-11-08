@@ -3,6 +3,57 @@
 本文件记录对外可见的变化。版本遵循 [语义化版本](https://semver.org/lang/zh-CN/)：
 `主版本` 改协议/数据格式，`次版本` 加功能，`修订号` 只修 bug。
 
+## 4.27.6 · 2026-11-08 · 英文界面「背光」那一行不再裁字
+
+- **英文界面里 `Off` 被切掉**：`外观` 页「背光」这一行六个选项挤在一行，
+  中文「跟随 / 紫 / 红 / 青 / 金 / 关」放得下，英文 `Match / Purple / Red / Cyan / Gold / Off`
+  实测内容宽 299 px、行宽只有 246 px，最后一个 `Off` 被裁掉半截——关不掉背光，还没提示。
+- 修法只动一行：给这行选项容器加 `flexWrap: 'wrap'` 和 `minWidth: 0`，装不下就折到第二行。
+  中文仍是一行（实测 211 px / 211 px 不裁），英文折成两行（184 px / 184 px，六个按钮都完整）。
+- 只动布局，不动背光本身：颜色、强度、呼吸动画、`glow: 'none'` 的语义全部照旧；
+  也顺带确认这次没有任何关于 `filter` / `drop-shadow` 的改动。
+- `check-copy` / `check-i18n` / `check-docs` 三闸全绿，`npm test` 全链 exit=0。
+
+## 4.27.5 · 2026-11-08 · 法宝多了 8 件
+
+- **法宝从 14 件变 22 件**：新接剑匣、五雷符、玉简、剑穗、玉佩、丹炉、冰魄珠、青莲，
+  全部 256×256，接在同一套按钮皮肤里（`外观` 页，面板自动换行、可滚，布局没动）。
+  同批出的铜钱剑没接——28px 下方孔会糊，剑身也太细，留 `assets/talisman10/` 里不进包。
+- 系数不是拍脑袋定的：老 14 件按各自的 `TALISMAN_FIT` 渲染到 28×28，量 alpha>24 的实际墨迹覆盖率，
+  中位数是 0.323；8 件新图按这个目标反解 scale，钳 0.85–1.25。
+  细长件（剑匣 1.22、剑穗 1.25）撑到上限，整块大件（玉简 / 丹炉 / 冰魄珠 / 青莲）落在 0.85。
+- 说明同步：`plugin/locale/zh.json` / `en.json` 的 `meta.description` 与 `description`、
+  两份 README 的功能表与面板说明、`package.json` / `plugin/package.json` 的 description、
+  面板关于页那句「N 件法宝皮肤」，14 一律改 22。
+- 只加法宝，不动行为：姿态、剑舞、音效、提醒、峰谷口径全部照旧。
+  `check-copy` / `check-i18n` / `check-docs` 三闸全绿，`npm test` 全链 exit=0。
+
+## 4.27.4 · 2026-11-08 · 补上「峰谷」模块的说明
+
+- **说明漏了一个一直有的模块**：气泡编辑器里 `峰谷`（`{type:'peak'}`）从 4.14 起就在，
+  渲染时会显示当前是「谷价」还是「高峰价」，并带一个到下次切换的倒计时
+  （`{label} · 距{next} {cd}`，`fmtCd` 出 `mm:ss`，超 1 小时出 `h:mm:ss`），
+  颜色按状态自己走（谷价绿 `#6FE7B8`／高峰价橙 `#FFB265`，浅色主题换成深绿 `#1E7A4C` / 深橙 `#A85A1A`），
+  字体加粗——但这些在插件页说明、两份 README 的功能表里一个字都没有。
+- 补的位置：`plugin/locale/zh.json` / `en.json` 的 `meta.description` 与 `description`（编辑器能力那句）、
+  `README.md` / `README.en.md` 的功能表、`plugin/README.md` / `.en.md` 第四节的模块清单。
+- 顺带把变量写清：`{label}` `{next}` `{window}` `{cd}`，默认格式 `{label} · 距{next} {cd}`。
+- 只动文案：不改行为、不改峰谷计算（工作日 9–12、14–18 高峰；周末与法定节假日全天谷价，口径照旧）。
+  `check-copy` / `check-i18n` / `check-docs` 三闸全绿，`npm test` 全链 exit=0。
+
+## 4.27.3 · 2026-10-30 · 插件说明跟上编辑器的真实行为
+
+- **说明过时**：插件页说明（`plugin/locale/zh.json` / `en.json` 的 `meta.description`）还写着
+  「气泡可视化编辑、可逐行调字号与颜色，改坏了点右上恢复默认」，英文写 `with one-click reset`。
+  而 4.23.0 起的行为是：只还原**编辑器当前打开的那一个**目标（不再整条队列一起重置），
+  点「恢复默认」先弹「恢复默认？」、**再点确认**才执行，按钮在编辑器头部。
+- 说明补全编辑器本来就有、文案一直没写的能力：行可增删与 ↑↓ 排序、行内模块，
+  逐行调字号 / 颜色 / 加粗 / 斜体 / 下划线（对应 `setStyle({fontSize|color|fontWeight|fontStyle|textDecoration})`）。
+- `plugin/README.md` / `.en.md` 早在 4.23.0 就写对了（「只重置当前目标并二次确认」/「per-target and confirmed」），
+  这次是把**插件页那份说明**追平，中英同改。
+- 只动文案：不改行为、不改样式、不动面板布局。`check-copy` / `check-i18n` / `check-docs` 三闸全绿，
+  `npm test` 全链 exit=0。
+
 ## 4.27.2 · 2026-10-27 · 英文界面截断修复 + 展示图换成对比图
 
 - **英文界面两处截断**：页签 `Ledger` 被省略成 `Ledg…`、标题 `Azure Cloud Sword Immortal` 被截成

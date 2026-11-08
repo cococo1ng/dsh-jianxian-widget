@@ -12,7 +12,7 @@ epository / homepage / ugs 已填
 > - **待办**：Trusted Publisher 四字段已填、Allow publish 已勾，但提交停在「Confirm password」，
 >   需要在 npm 页面上输一次密码才会保存；保存后 git tag v* 就能自动发布
 >
-> 后续发版（OIDC 配好之后）：git tag v4.27.2 && git push origin v4.27.2
+> 后续发版（OIDC 配好之后）：git tag v4.27.6 && git push origin v4.27.6
 
 包名 `dsh-jianxian-widget`（npm 上未被占用）。发布方式两条，**推荐 A**。
 

@@ -22,7 +22,7 @@ One frontend, two shells:
 </p>
 
 <p align="center">
-  <img src="docs/img/panel-look-compare.png" alt="Look tab: 中文 / English (14 talisman skins)" width="760">
+  <img src="docs/img/panel-look-compare.png" alt="Look tab: 中文 / English" width="760">
 </p>
 
 ## Install
@@ -64,12 +64,15 @@ Host-side changes need a client restart; frontend-only changes just need `Ctrl+F
 
 ## Features
 
-- **23 standing poses** + **24-frame sword dance**, **14 talismans**, **10 sound effects**
+- **23 standing poses** + **24-frame sword dance**, **22 talismans**, **10 sound effects**
   (each switchable), 6-tab panel.
 - Bubble system: click sequence, variants, weighted random, per-line styles, **visual editor**.
 - Click him 5 times within 3 seconds → he flies a lap around the screen (~6 s).
 - Accounting (DSH only): balance with four colour bands, today's spend, average per turn,
   7-day bar chart, searchable ledger.
+- Peak/off-peak: the `peak` bubble module shows the current state — green off-peak, orange at peak —
+  with a live countdown to the next switch (weekdays 9–12 and 14–18 are peak; weekends and statutory
+  holidays are off-peak all day).
 - Reminders: low balance, per-turn cost, pending question/approval, daily budget, late-night,
   hydration/eye-rest.
 
