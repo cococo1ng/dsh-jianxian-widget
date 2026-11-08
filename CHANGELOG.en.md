@@ -16,7 +16,7 @@ Versions before 4.19.2 are documented in the Chinese [CHANGELOG.md](CHANGELOG.md
   of `glow: 'none'` are exactly as before. Nothing about `filter` / `drop-shadow` changed here either.
 - `check-copy` / `check-i18n` / `check-docs` green, full `npm test` exit=0.
 
-## 4.27.5 · 2026-11-08 · Eight more talismans
+## 4.27.5 · 2026-11-08 · Eight more talismans (never released on its own)
 
 - **Talismans go from 14 to 22**: added sword case, thunder talisman, jade slip, sword tassel,
   jade pendant, cauldron, frost orb and lotus — all 256×256, sitting in the same menu-button skin
@@ -33,7 +33,7 @@ Versions before 4.19.2 are documented in the Chinese [CHANGELOG.md](CHANGELOG.md
 - Additive only, no behaviour change: poses, sword dance, sounds, reminders and the peak/off-peak
   maths are exactly as before. `check-copy` / `check-i18n` / `check-docs` green, full `npm test` exit=0.
 
-## 4.27.4 · 2026-11-08 · Document the peak/off-peak module
+## 4.27.4 · 2026-11-08 · Document the peak/off-peak module (never released on its own)
 
 - **The docs never mentioned a module that has always existed**: the bubble editor's `peak` module
   (`{type:'peak'}`, there since 4.14) renders whether it is off-peak or peak right now plus a live
