@@ -43,5 +43,15 @@ jobs:
         run: |
           node -e "const p=require('./plugin/package.json'); if(p.private) {console.error('package.json 还有 private:true，npm 会拒绝发布'); process.exit(1)}; console.log('package:', p.name, p.version)"
 
+      - name: 自检 OIDC（决定 npm 有没有可信发布这条路）
+        run: |
+          if [ -n "$ACTIONS_ID_TOKEN_REQUEST_URL" ]; then
+            echo "OIDC：runner 已注入 id-token 请求地址，说明 id-token: write 生效"
+          else
+            echo "OIDC：没有 ACTIONS_ID_TOKEN_REQUEST_URL —— 这个 workflow 没拿到 id-token 权限"
+            echo "      npm 无法用 Trusted Publishing，只能回退到传统 token，于是报 ENEEDAUTH"
+          fi
+          echo "npm: $(npm --version) / node: $(node --version)"
+
       - name: 发布到 npm
         run: npm publish ./plugin

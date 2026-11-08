@@ -1,18 +1,26 @@
 # 发布到 npm
 
-> **当前状态（2026-10-27 18:45）**
+> **当前状态（2026-11-08 10:30）**
 >
-> - **已发布**：dsh-jianxian-widget@4.27.1 上线，latest 指向它；
->   https://www.npmjs.com/package/dsh-jianxian-widget （MIT，11 个文件，5.1 MB tgz / 6.8 MB 解包）
+> - **线上 latest**：`dsh-jianxian-widget@4.27.2`（npm 上只有 `0.0.0-stage` / `4.27.1` / `4.27.2` 三版，
+>   后两版都不是 OIDC 发的：`dist` 里没有 attestations，`_npmUser` 是账号本人）
+>   https://www.npmjs.com/package/dsh-jianxian-widget （MIT，11 个文件，5.2 MB tgz / 6.9 MB 解包）
 > - 仓库：https://github.com/cococo1ng/dsh-jianxian-widget （public，默认分支 main，CI 绿）
-> - 
-epository / homepage / ugs 已填
+> - Repository / homepage / Bugs 三个字段已填
 > - 首发用的是 **granular token（Bypass 2FA）**，因为账号 2FA 不是 TOTP，CLI 拿不到 6 位码；
 >   这个 token 用完即删，**不要留在 .npmrc 里**
-> - **待办**：Trusted Publisher 四字段已填、Allow publish 已勾，但提交停在「Confirm password」，
->   需要在 npm 页面上输一次密码才会保存；保存后 git tag v* 就能自动发布
+> - **代码侧已就绪**：4.27.6 已 commit（`4fe546c`）、打完 tag `v4.27.6` 并推上 GitHub。
+>   `ci`（main 与 tag 各一次）全绿；`publish to npm` 第 1–8 步全过（含 `npm test`、版本校验），
+>   **只有第 9 步 `npm publish ./plugin` 失败**：`error code ENEEDAUTH` /
+>   `need auth This command requires you to be logged in to https://registry.npmjs.org`。
+>   runner 是 ubuntu-26.04 / node v24.22.2 / npm 11.19.1（版本够），日志里
+>   `oidc` / `provenance` / `trusted` / `id-token` 关键词各 0 命中 —— 说明 npm 根本没走 OIDC 分支。
+> - **待办（都在网页上，CLI 做不了）**：
+>   1. npm 包页面 → Settings → Trusted Publisher：四个字段填好、**Allow publish** 勾上，
+>      然后输一次账号密码让「Confirm password」真正保存（历史上就卡在这一步）；
+>   2. 保存后重跑：Actions → publish to npm → Run workflow（或重新推一个 tag）。
 >
-> 后续发版（OIDC 配好之后）：git tag v4.27.6 && git push origin v4.27.6
+> 后续发版（OIDC 配好之后）：git tag v4.27.7 && git push origin v4.27.7
 
 包名 `dsh-jianxian-widget`（npm 上未被占用）。发布方式两条，**推荐 A**。
 
