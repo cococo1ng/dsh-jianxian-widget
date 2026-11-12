@@ -100,6 +100,50 @@ const MUTANTS = [
     replace: 'if (false && !isLoopbackAddr(remoteAddrOf(req))) return',
     expect: '非回环来源必须 403',
   },
+  // M14 / M15（2026-11-12）：重启后账本状态恢复 + 进行中轮次的可见性。
+  // 这两条都是"面板显示"的守卫 —— 盯的是「账本里有，界面却显示 —/不动」这类没人会报错的坏法。
+  {
+    id: 'M14 拆掉重启恢复',
+    file: 'plugin/index.js',
+    guard: 'test-routes.mjs',
+    find: 'if (fromSaved) lastTurn = fromSaved',
+    replace: 'if (false) lastTurn = fromSaved',
+    expect: '重启后最近一笔要从账本恢复',
+  },
+  {
+    id: 'M15 进行中恒不可见',
+    file: 'plugin/index.js',
+    guard: 'test-routes.mjs',
+    find: 'Object.assign({}, payload, { live: liveTotals() })',
+    replace: 'Object.assign({}, payload, { live: { turns: 0, cost: 0, tokens: 0, unpriced: 0 } })',
+    expect: '进行中的轮次要能看见',
+  },
+  // M16 / M17（2026-11-12）：账本少算的根因是「daily 缺天 + 明细跨天被扔」。
+  // 这两条钉住兜底链路：日期轴要从明细取，跨天不许整批清空明细。
+  {
+    id: 'M16 兜底不看明细',
+    file: 'plugin/index.js',
+    guard: 'test-routes.mjs',
+    find: ': (daily[d] || fromTurns.get(d) || {}))',
+    replace: ': (daily[d] || {}))',
+    expect: 'daily 缺天时合计要从明细兜底',
+  },
+  {
+    id: 'M17 跨天清空明细',
+    file: 'plugin/index.js',
+    guard: 'test-routes.mjs',
+    find: 'out.turns = old',
+    replace: 'out.turns = []',
+    expect: '跨天不许把明细整批扔掉',
+  },
+  {
+    id: 'M18 近 7 天变成 4 天',
+    file: 'plugin/index.js',
+    guard: 'test-routes.mjs',
+    find: 'for (let i = 6; i >= 0; i -= 1) dates.push(bjNow(nowMs - i * 86400000).day)',
+    replace: 'for (let i = 3; i >= 0; i -= 1) dates.push(bjNow(nowMs - i * 86400000).day)',
+    expect: '近 7 天必须是连续 7 个日历日',
+  },
 ]
 
 function run(cmd, args, opts) {

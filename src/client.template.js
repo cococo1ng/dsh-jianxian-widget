@@ -707,6 +707,25 @@ window.__ModuleLoader__.load({
       return (n < 0 ? '-¥' : '¥') + Math.abs(n).toFixed(Math.abs(n) < 0.1 ? 3 : 2);
     }
 
+    // 「最近一笔」：宿主重启后会从账本末条恢复；未计价的轮次既不是 ¥0.00，也不该显示成「没有记录」
+    function lastTurnText(st) {
+      const lt = st && st.lastTurn;
+      if (!lt) return '—';
+      const n = Number(lt.amount);
+      if (lt.amount === null || lt.amount === undefined || !Number.isFinite(n)) return '未计价';
+      return money(n);
+    }
+
+    // 这一轮还没走到 turn/end：账本按轮结算，所以「今日已用」本来就不会动。
+    // 这里把进行中的累计单独说出来，免得被当成记账坏了（2026-11-12）。
+    function liveHint(st) {
+      const base = (st && st.day) ? String(st.day) : '';
+      const cost = Number(st && st.live && st.live.cost) || 0;
+      if (!(cost > 0)) return base;
+      const tail = '本轮进行中' + ' +' + money(cost);
+      return base ? (base + ' · ' + tail) : tail;
+    }
+
     function fmtCd(ms) {
       const total = Math.max(0, Math.round(Number(ms) / 1000));
       const hh = Math.floor(total / 3600);
@@ -1978,7 +1997,7 @@ window.__ModuleLoader__.load({
           today: money(state.todayUsed), todayRaw: Number(state.todayUsed || 0).toFixed(2),
       turns: String(Number(state.todayTurns) || 0),
       avg: (Number(state.todayTurns) > 0 ? money(Number(state.todayUsed || 0) / Number(state.todayTurns)) : '—'),
-      last: (state.lastTurn && Number(state.lastTurn.amount) > 0 ? money(state.lastTurn.amount) : '—'),
+      last: lastTurnText(state),
           label: peak.label || '—', next: peak.next || '', window: peak.window || '', cd: fmtCd(peak.nextInMs), day: state.day || '',
         };
       }
@@ -2278,10 +2297,10 @@ window.__ModuleLoader__.load({
           return [
             Row('余额', h('b', { className: 'xjj-val' }, money(state.balance)),
               state.balanceError ? String(state.balanceError).slice(0, 18) : (state.source === 'account' ? '账号登录态' : (state.source || ''))),
-            Row('今日已用', h('b', { className: 'xjj-val' }, money(state.todayUsed)), state.day || ''),
+            Row('今日已用', h('b', { className: 'xjj-val' }, money(state.todayUsed)), liveHint(state)),
             Row('今日轮数', h('b', { className: 'xjj-val' }, String(state.todayTurns || 0) + ' 轮'),
               state.todayTurns ? ('平均 ' + money(state.todayUsed / state.todayTurns) + ' / 轮') : '还没有记录'),
-            Row('最近一笔', h('b', { className: 'xjj-val' }, state.lastTurn ? money(state.lastTurn.amount) : '—'),
+            Row('最近一笔', h('b', { className: 'xjj-val' }, lastTurnText(state)),
               state.lastTurn ? ((state.lastTurn.tokens || 0) + ' tokens · ' + (state.lastTurn.model || '')) : ''),
             Row('告急阈值', Step('¥' + warnLow,
               () => updateCfg((n) => { n.warn = Object.assign({}, n.warn || {}, { balanceLow: Math.max(0, warnLow - 5) }); }),

@@ -3,6 +3,45 @@
 User-visible changes. Versions follow [SemVer](https://semver.org/).
 Versions before 4.19.2 are documented in the Chinese [CHANGELOG.md](CHANGELOG.md).
 
+## 4.27.8 · 2026-11-12 · Ledger history no longer vanishes: the missing "last 7 days / all time" money is back
+
+- **An empty `daily` wipes out the whole history**: the "Last 7 days" and "All time" totals only read
+  `daily` (the per-day rollup). In the observed case `daily` was `{}`, so both pages showed today only —
+  11-10 (¥7.22) and 11-11 (¥25.34) disappeared together.
+- **Per-turn entries were discarded on day change**: `readLedger()` cleared `turns` when the date rolled
+  over and pushed nothing to the archive, so "All time" had no detail beyond today either, despite the
+  documented 90-day window.
+- Three changes:
+  1. day change no longer clears the entries; the 90-day / 500-entry trim and `pushArchive` in
+     `finalizeTurn` own that;
+  2. when a day change is detected, any day present in the entries but missing from `daily` is restored
+     from those entries (self-healing);
+  3. `usageView` resolves each day as "daily first, entries as fallback", and builds the date axis from
+     daily ∪ entry days ∪ today.
+- **"Last 7 days" now means seven consecutive calendar days**: the old code took "the last six days that
+  have records", so a gap pulled earlier dates in (spanning 9 days in practice). A day with no spending now
+  shows 0 and the axis stays consecutive.
+- The history was backfilled from session logs (official route only, same price table, same peak/off-peak
+  rules) for 25 days (10-16 ~ 11-11); the original file was copied to `.xjj-state.json.bak-before-daily-backfill-*`.
+- Guards: four new assertions in `test-routes.mjs` (rollup on day change / entries must survive / fallback
+  when a day is missing / 7 days must be consecutive) with mutants M16, M17 and M18 in `test-teeth.mjs`.
+
+## 4.27.7 · 2026-11-12 · "Last turn" survives a restart, in-flight turns are visible
+
+- **"Last turn" always showed `—` after a restart**: `lastTurn` only lives in host memory, and startup
+  restored just `turnSeq` — amount, tokens, model and timestamp stayed empty, while `/xjj/state.json`
+  only emits `lastTurn` when `lastTurn.ts` exists. The ledger had the previous turn (20 turns, full
+  detail) and the panel still said `—`.
+  Fix: restore `lastTurn` from the ledger's last entry at startup, today-only — yesterday's entry never
+  poses as today's.
+- **"Spent today" does not move mid-turn**: the ledger settles per turn (`turn/end`), so the number is
+  supposed to stay put inside a turn — but nothing on the panel said so and it read as broken bookkeeping.
+  `/xjj/state.json` now carries `live` (cost / tokens / unpriced of in-flight turns, outside the 55 s
+  cache), and the "Spent today" subline appends "· this turn +¥0.04" while a turn is running.
+- **Unpriced turns** now read "Unpriced" in "Last turn" instead of `—` (distinct from "no records" and ¥0.00).
+- Guards: two new assertions in `test-routes.mjs` (in-flight visible / restored after restart) with
+  mutants M14 and M15 in `test-teeth.mjs`; `npm test` all green.
+
 ## 4.27.6 · 2026-11-08 · The Backlight row no longer clips in English
 
 - **`Off` was cut off in the English UI**: the Look tab's Backlight row packs six options onto one line.

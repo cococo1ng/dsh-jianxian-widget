@@ -245,6 +245,90 @@ const writeHeaders = { host: '127.0.0.1:12824', origin: 'http://127.0.0.1:12824'
   ok(st1.todayTokens > 0 && st1.todayByModel && Object.keys(st1.todayByModel).length > 0, '今日 token 与模型分布落盘', st1.todayByModel)
 }
 
+// ⑦ 进行中的轮次：账本按轮结算（turn/end 才落账），但面板得能看见它在涨。
+// 没有这条断言的话，"live 恒空"和"live 一直不归零"两种坏法都抓不到（M15）。
+{
+  const emit = (type, data) => listeners.get('session/event')({ id: 's9' }, { type, data })
+  const before = await call('/xjj/state.json', { url: '/xjj/state.json?refresh=1' })
+  emit('assistant/message', {
+    turn: 11,
+    usage: { inputTokens: 1_000_000, cacheReadTokens: 0, cacheWriteTokens: 0, outputTokens: 0 },
+    message: { source: { model: 'deepseek-v4-flash' } },
+  })
+  const during = await call('/xjj/state.json', { url: '/xjj/state.json?refresh=1' })
+  ok(during.live && Number(during.live.cost) > 0, '进行中的轮次要能看见', during.live)
+  ok(Math.abs(Number(during.todayUsed) - Number(before.todayUsed)) < 1e-9, '进行中不改账本今日已用', { before: before.todayUsed, during: during.todayUsed })
+
+  emit('turn/end', { turn: 11 })
+  const after = await call('/xjj/state.json', { url: '/xjj/state.json?refresh=1' })
+  ok(after.live && Number(after.live.cost) === 0, '结算后 live 归零', after.live)
+  ok(Number(after.todayUsed) > Number(before.todayUsed), '结算后账本才涨', { before: before.todayUsed, after: after.todayUsed })
+}
+
+// ⑧ 重启后「最近一笔」必须从账本恢复：lastTurn 只活在内存里，重启后只剩一个 seq，
+// 面板就从账本里明明有的上一笔退化成「—」（2026-11-12 实测）。没有这条断言，
+// 恢复逻辑被拆掉也不会有人发现（M14）。
+{
+  const stateFile = path.join(TMP, '.xjj-state.json')
+  const st = JSON.parse(fs.readFileSync(stateFile, 'utf8'))
+  const lastTs = Date.now() - 5 * 60 * 1000
+  st.turns.push({ ts: lastTs, turn: 42, amount: 0.125, tokens: 4321, model: 'deepseek-v4-flash' })
+  st.turnSeq = 9
+  fs.writeFileSync(stateFile, JSON.stringify(st, null, 2), 'utf8')
+
+  // 带 query 的 URL 会让 ESM 重新求值这个模块 = 新的 lastTurn 初值，等价于宿主重启（同一份状态文件）
+  const fresh = await import('./plugin/index.js?restart=1')
+  const routes2 = new Map()
+  const ctx2 = {
+    effect(fn) { const d = fn(); return () => { if (typeof d === 'function') d() } },
+    on() { return () => {} },
+    get() { return null },
+    webServer: { register(route) { routes2.set(route.path, route.handler); return () => routes2.delete(route.path) } },
+  }
+  fresh.apply(ctx2)
+  const res2 = makeRes()
+  await routes2.get('/xjj/state.json')(makeReq({ url: '/xjj/state.json?refresh=1' }), res2)
+  const st2 = res2.box.body || {}
+  ok(!!(st2.lastTurn && Math.abs(Number(st2.lastTurn.amount) - 0.125) < 1e-9), '重启后最近一笔要从账本恢复', st2.lastTurn)
+  ok(!!(st2.lastTurn && Math.abs(Number(st2.lastTurn.ts) - lastTs) < 1), '恢复的是账本末条的时间', st2.lastTurn)
+}
+
+// ⑨ 账本兜底：daily 被清空 / 某天没归档成时，金额不能凭空少掉。
+// 2026-11-12 实际踩过：「近 7 天 / 全部」只剩今天，11-10、11-11 的两万多字花费没算进去（少算 ¥32）。
+{
+  const stateFile = path.join(TMP, '.xjj-state.json')
+  const readState = () => JSON.parse(fs.readFileSync(stateFile, 'utf8'))
+  const bjDay = (ms) => new Date(ms + 8 * 3600 * 1000).toISOString().slice(0, 10)
+  const yTs = Date.now() - 26 * 3600 * 1000
+  const yDay = bjDay(yTs)
+
+  // 9a 跨天自愈：账本还停在昨天、明细里有昨天的记录 → 归档要成，且明细不许被整批扔掉
+  const st = readState()
+  st.turns.push({ ts: yTs, turn: 5, amount: 1.25, tokens: 1000, model: 'deepseek-v4-flash' })
+  st.date = yDay
+  st.todayUsed = 2.5
+  st.todayTurns = 4
+  st.todayTokens = 2000
+  st.daily = {}
+  fs.writeFileSync(stateFile, JSON.stringify(st, null, 2), 'utf8')
+  await call('/xjj/usage.json', { url: '/xjj/usage.json?range=7d' })
+  const afterCross = readState()
+  ok(!!(afterCross.daily && afterCross.daily[yDay] && Math.abs(Number(afterCross.daily[yDay].used) - 2.5) < 1e-9),
+    '跨天归档要把上一天写进 daily', afterCross.daily)
+  ok(afterCross.turns.some((t) => Number(t.turn) === 5), '跨天不许把明细整批扔掉', afterCross.turns.length)
+
+  // 9b daily 缺天时，合计必须从明细兜底（否则历史金额就此蒸发）
+  const st2 = readState()
+  st2.daily = {}
+  fs.writeFileSync(stateFile, JSON.stringify(st2, null, 2), 'utf8')
+  const u7 = await call('/xjj/usage.json', { url: '/xjj/usage.json?range=7d' })
+  ok(u7.totals.amount >= 1.25, 'daily 缺天时合计要从明细兜底', u7.totals)
+  ok(Array.isArray(u7.days) && u7.days.some((d) => d.date === yDay), '明细里的历史日要出现在日期轴上', u7.days)
+  ok(u7.days.length === 7, '近 7 天必须是连续 7 个日历日（缺天不许把更早的日期拉进来）', u7.days.map((d) => d.date))
+  const uAll = await call('/xjj/usage.json', { url: '/xjj/usage.json?range=all' })
+  ok(uAll.totals.amount >= u7.totals.amount, '全部口径不小于近 7 天', { all: uAll.totals.amount, d7: u7.totals.amount })
+}
+
 fs.rmSync(TMP, { recursive: true, force: true })
 
 if (fails.length) {

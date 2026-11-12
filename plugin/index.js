@@ -429,9 +429,33 @@ export function apply(ctx) {
   const turnAggs = new Map() // sessionId -> { turn, tokens, cost, model, startedAt }
   let lastTurn = { seq: 0, turn: null, amount: null, tokens: null, model: null, ts: null }
   const bestKey = 'xjj:lastTurnSeq'
+
+  // 账本末条 → lastTurn。跨天（末条不是今天的）返回 null：不拿昨天的冒充今天。
+  // 为什么需要它：lastTurn 只活在内存里，重启后只剩一个 seq，面板「最近一笔」就从
+  // 账本里明明有的上一笔退化成「—」（2026-11-12 实测，重启后一直是空的）。
+  function restoreLastTurn(saved) {
+    const list = saved && Array.isArray(saved.turns) ? saved.turns : []
+    const last = list.length ? list[list.length - 1] : null
+    if (!last || !Number.isFinite(Number(last.ts))) return null
+    const ts = Number(last.ts)
+    if (bjNow(ts).day !== bjNow().day) return null
+    const amount = last.amount === null || last.amount === undefined ? null : Number(last.amount)
+    return {
+      seq: Number.isFinite(Number(saved.turnSeq)) ? Number(saved.turnSeq) : 0,
+      turn: Number.isFinite(Number(last.turn)) ? Number(last.turn) : null,
+      amount: Number.isFinite(amount) ? amount : null,
+      unpriced: Number(last.unpriced) || 0,
+      tokens: Number.isFinite(Number(last.tokens)) ? Number(last.tokens) : null,
+      model: last.model || null,
+      ts,
+    }
+  }
+
   {
     const saved = readJson(STATE_FILE, {})
     if (saved && Number.isFinite(Number(saved.turnSeq))) lastTurn.seq = Number(saved.turnSeq)
+    const fromSaved = restoreLastTurn(saved)
+    if (fromSaved) lastTurn = fromSaved
   }
 
   function addMoney(a, b) {
@@ -490,6 +514,28 @@ export function apply(ctx) {
     led.turns = keep
     led.turnSeq = lastTurn.seq
     writeJson(STATE_FILE, led)
+  }
+
+  // 正在进行、还没走到 turn/end 的那一轮：账本按设计不动（按轮结算），
+  // 但面板得能看见它在涨，否则「用了半天数字不动」就会被当成记账坏了（2026-11-12）。
+  function liveTotals() {
+    let turns = 0
+    let cost = 0
+    let tokens = 0
+    let unpriced = 0
+    for (const agg of turnAggs.values()) {
+      if (!agg) continue
+      turns += 1
+      cost = addMoney(cost, Number(agg.cost) || 0)
+      tokens += Number(agg.tokens) || 0
+      unpriced += Number(agg.unpriced) || 0
+    }
+    return { turns, cost, tokens, unpriced }
+  }
+
+  // live 不进 55 秒缓存：缓存里的轮次金额一冻就失去意义
+  function withLive(payload) {
+    return Object.assign({}, payload, { live: liveTotals() })
   }
 
   // —— 归档：被挤出的逐轮明细写到这里，上限 ARCHIVE_MAX 条，别让主账本无限长 ——
@@ -752,6 +798,25 @@ export function apply(ctx) {
       out.turns = Array.isArray(raw.turns) ? raw.turns : []
     } else if (raw.date) {
       // 跨天：把上一天的结果归档进 daily（含 tokens / 模型分布），并立刻落盘（别等余额接口可用）
+      const old = Array.isArray(raw.turns) ? raw.turns : []
+      // 自愈：明细里出现过的历史日，daily 缺哪一天就按明细补哪一天。
+      // 2026-11-12 实测踩过：daily 被整体清空后，「近 7 天 / 全部」只剩今天，
+      // 而 11-10、11-11 的两万多字花费在明细里本来还在 —— 少算 ¥32 就是这么来的。
+      for (const t of old) {
+        const d = dayOfTs(t && t.ts)
+        if (!d || d === today || daily[d]) continue
+        const cur = { used: 0, turns: 0, tokens: 0, byModel: {} }
+        cur.used = addMoney(Number(cur.used) || 0, Number(t.amount) || 0)
+        cur.turns += 1
+        cur.tokens += Number(t.tokens) || 0
+        const mk = String(t.model || '未知模型')
+        const mrow = cur.byModel[mk] || { amount: 0, turns: 0, tokens: 0 }
+        mrow.amount = addMoney(Number(mrow.amount) || 0, Number(t.amount) || 0)
+        mrow.turns += 1
+        mrow.tokens += Number(t.tokens) || 0
+        cur.byModel[mk] = mrow
+        daily[d] = cur
+      }
       daily[raw.date] = {
         used: numOrNull(raw.todayUsed) || 0,
         turns: numOrNull(raw.todayTurns) || 0,
@@ -761,6 +826,9 @@ export function apply(ctx) {
       // daily 只留最近 DAILY_KEEP_DAYS 天，免得账本无限长
       const keys = Object.keys(daily).sort()
       if (keys.length > DAILY_KEEP_DAYS) for (const k of keys.slice(0, keys.length - DAILY_KEEP_DAYS)) delete daily[k]
+      // 明细留着：跨天不该把 90 天的逐条记录整批扔掉（扔了「全部」就只剩今天）。
+      // 90 天 / MAX_TURNS 的裁剪与归档交给 finalizeTurn，那里才会 pushArchive。
+      out.turns = old
       writeJson(STATE_FILE, out)
     }
     return out
@@ -773,15 +841,49 @@ export function apply(ctx) {
     return Number.isFinite(t) ? bjNow(t).day : ''
   }
 
+  // 明细按日聚合：daily 缺天时（被清空 / 那天没归档成）用它兜底，金额就不会凭空消失。
+  function turnsByDay(led) {
+    const out = new Map()
+    for (const t of (led.turns || [])) {
+      const d = dayOfTs(t && t.ts)
+      if (!d) continue
+      const cur = out.get(d) || { used: 0, turns: 0, tokens: 0, byModel: {} }
+      cur.used = addMoney(cur.used, Number(t.amount) || 0)
+      cur.turns += 1
+      cur.tokens += Number(t.tokens) || 0
+      const mk = String(t.model || '未知模型')
+      const mrow = cur.byModel[mk] || { amount: 0, turns: 0, tokens: 0 }
+      mrow.amount = addMoney(mrow.amount, Number(t.amount) || 0)
+      mrow.turns += 1
+      mrow.tokens += Number(t.tokens) || 0
+      cur.byModel[mk] = mrow
+      out.set(d, cur)
+    }
+    return out
+  }
+
   function usageView(range, q, limit) {
     const led = readLedger()
     const daily = led.daily || {}
     const today = led.date
+    const fromTurns = turnsByDay(led)
+    // 某一天的真源：daily 汇总优先（带跨天归档的 byModel），缺了就用明细聚合兜底
+    const dayRow = (d) => (d === today
+      ? { used: led.todayUsed, turns: led.todayTurns, tokens: led.todayTokens }
+      : (daily[d] || fromTurns.get(d) || {}))
     let dates
     if (range === 'today') dates = [today]
-    else {
-      dates = Object.keys(daily).filter((d) => d !== today).sort()
-      if (range === '7d') dates = dates.slice(-6)
+    else if (range === '7d') {
+      // 连续 7 个日历日（含今天）：没记账的那天显示 0，日期轴不许因为缺天而往前跳
+      // （旧写法是「最近 6 个有记录的日子」，缺一天就把更早的日期拉进来，看着像 9 天）
+      const nowMs = Date.now()
+      dates = []
+      for (let i = 6; i >= 0; i -= 1) dates.push(bjNow(nowMs - i * 86400000).day)
+    } else {
+      const all = new Set(Object.keys(daily))
+      for (const d of fromTurns.keys()) all.add(d)
+      all.delete(today)
+      dates = Array.from(all).sort()
       dates.push(today)
     }
     const set = new Set(dates)
@@ -799,7 +901,7 @@ export function apply(ctx) {
     }
     for (const d of dates) {
       if (d === today) continue
-      const row = daily[d] || {}
+      const row = dayRow(d)
       amount = addMoney(amount, Number(row.used) || 0)
       turns += Number(row.turns) || 0
       tokens += Number(row.tokens) || 0
@@ -872,7 +974,7 @@ export function apply(ctx) {
       totals: { amount, turns, tokens },
       byModel: Array.from(byModel.values()).sort((a, b) => b.amount - a.amount),
       days: dates.map((d) => {
-        const row = d === today ? { used: led.todayUsed, turns: led.todayTurns } : (daily[d] || {})
+        const row = dayRow(d)
         return { date: d, used: Number(row.used) || 0, turns: Number(row.turns) || 0 }
       }),
       items: items.slice(0, limit),
@@ -903,7 +1005,7 @@ export function apply(ctx) {
 
   async function computeState() {
     const now = Date.now()
-    if (cache && now - cache.at < CACHE_MS) return cache.payload
+    if (cache && now - cache.at < CACHE_MS) return withLive(cache.payload)
 
     let bal = await balanceFromApiKey()
     if (!bal.ok) {
@@ -960,7 +1062,7 @@ export function apply(ctx) {
       updatedAt: new Date(now).toISOString(),
     }
     cache = { at: now, payload }
-    return payload
+    return withLive(payload)
   }
 
   function sendJson(res, body, status) {

@@ -15,7 +15,7 @@ One host plugin (8 routes, all on `webServer`) plus one pure front-end widget; *
 
 | Item | Value |
 |---|---|
-| Version | **v4.27.6** |
+| Version | **v4.27.8** |
 | Poses | **23 standing poses** + **24-frame sword dance** |
 | Talismans (menu button skins) | 22 |
 | Sounds | 10, each with its own switch |
@@ -36,7 +36,7 @@ Right-click the character, or hover and click the talisman icon above his head, 
 
 | Tab | Contents |
 |---|---|
-| **Data** | Balance, used today, turns today (with average per turn), latest charge, low-balance threshold, refresh now, last-7-days bar chart |
+| **Data** | Balance, used today (in-flight turns show what the current turn has spent), turns today (with average per turn), latest charge (restored from the ledger after a restart), low-balance threshold, refresh now, last-7-days bar chart |
 | **Ledger** | Today / last 7 days / all time; totals (¥ · turns · tokens), per-model share bars, per-turn details (date-time · model · amount), search, retention line |
 | **Sound** | Master switch, volume slider, 10 individual sound switches |
 | **Appearance** | 22 talismans, character size, bubble dwell 3–30 s, click bubbles, auto-mirror when docked left, back to bottom-right |
@@ -142,7 +142,7 @@ The late-night 3-click bubble **fires only on the 3rd click and does not reset t
 
 | Route | Purpose |
 |---|---|
-| `GET /xjj/state.json[?refresh=1]` | Balance, used today, peak/off-peak, busy, last 7 days |
+| `GET /xjj/state.json[?refresh=1]` | Balance, used today, in-flight turns (`live`), peak/off-peak, busy, last 7 days |
 | `GET /xjj/turn.json` | Latest turn cost (`seq` increments; the front end bubbles on change) |
 | `GET /xjj/usage.json?range=today\|7d\|all&q=` | Ledger page data (totals / per model / details / retention) |
 | `GET /xjj/wait.json` | Pending question/approval |
