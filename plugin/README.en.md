@@ -15,7 +15,7 @@ One host plugin (8 routes, all on `webServer`) plus one pure front-end widget; *
 
 | Item | Value |
 |---|---|
-| Version | **v4.27.8** |
+| Version | **v4.28.0** |
 | Poses | **23 standing poses** + **24-frame sword dance** |
 | Talismans (menu button skins) | 22 |
 | Sounds | 10, each with its own switch |
@@ -217,7 +217,7 @@ Placeholders: `{v}` `{bal}` `{today}` `{todayRaw}` `{turns}` `{avg}` `{last}` `{
 
 ```sh
 cd _tools/jianxian-widget
-npm test        # copy → i18n → config → surface → audit → two guard suites → geometry → 11 mutants, about 1 minute
+npm test        # copy → i18n → config → surface → audit → two guard suites → geometry → 20 mutants, about 1 minute
 ```
 
 | Layer | Command | What it proves |
@@ -225,7 +225,7 @@ npm test        # copy → i18n → config → surface → audit → two guard s
 | Pre-checks | `npm run test:copy` / `test:i18n` / `test:config` / `test:surface` | Copy consistency, translation coverage (source + built bundle), config-merge coverage, structural completeness. If this layer fails, the rest is not worth running. |
 | Static audit | `node audit-teeth.mjs` / `--selftest` | Guards still have teeth (no always-true assertions / no log-only assertions / no missing red exit / no zero-reference checks) |
 | Logic guards | `node test-routes.mjs` (45 assertions), `node test-billing.mjs` (28) | Write fence, pending state machine, ledger, archive, billing, build freshness |
-| Teeth acceptance | `node test-teeth.mjs` | After 11 mutants break copies, the guards must **go red and hit the expected label** |
+| Teeth acceptance | `node test-teeth.mjs` | After 20 mutants break copies, the guards must **go red and hit the expected label** |
 
 To make a front-end change take effect: `python build.py` → **Ctrl+F5** → check the version on the More tab. If the version did not change, the new bundle is not loaded yet.
 

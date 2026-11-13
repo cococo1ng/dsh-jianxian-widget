@@ -75,12 +75,30 @@ const MUTANTS = [
     expect: '提问要挂起并带 callId',
   },
   {
-    id: 'M8 价格闸门不看路由',
+    // 2026-11-14：口径改成"第三方路由也按官方价记"后，原来的 provider 白名单锚点不存在了，
+    // 这条变异体跟着换到价表闸门本身 —— 它守的是「表外模型不许乱给价」。
+    id: 'M8 价表闸门失效',
     file: 'plugin/index.js',
     guard: 'test-billing.mjs',
-    find: "if (provider && OFFICIAL_PROVIDERS.indexOf(String(provider).toLowerCase()) < 0) return null",
-    replace: "if (false && provider) return null",
-    expect: '第三方路由上的同名模型不按官方价算',
+    find: 'return PRICE_TABLE[canonicalModel(model)] || null',
+    replace: "return PRICE_TABLE[canonicalModel(model)] || PRICE_TABLE['deepseek-flash']",
+    expect: '表里没有的模型不给价',
+  },
+  {
+    id: 'M19 第三方路由重新挡在账外',
+    file: 'plugin/index.js',
+    guard: 'test-billing.mjs',
+    find: 'export function priceFor(model) {',
+    replace: "export function priceFor(model, provider) {\n  if (provider && provider !== 'deepseek-account') return null",
+    expect: '第三方路由上的同名模型按同一张价表计价',
+  },
+  {
+    id: 'M20 压缩摘要不入账',
+    file: 'plugin/index.js',
+    guard: 'test-billing.mjs',
+    find: "const isCompact = type === 'compaction/summary'",
+    replace: 'const isCompact = false',
+    expect: '压缩摘要的 token 计进今日已用',
   },
   // M12 / M13：写栅栏除"标记头"之外的另两道。M1 只证明缺头会拒，
   // 不证明"伪造 Host"和"非回环来源"这两道还在 —— 它们各自独立，得各配一个变异体。

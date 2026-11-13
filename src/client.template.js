@@ -774,8 +774,14 @@ window.__ModuleLoader__.load({
       'deepseek-v4-pro': 'DS-V4.1-Pro',
     };
     function modelLabel(id) {
-      const k = String(id || '').trim().toLowerCase();
-      return MODEL_LABEL[k] || String(id || '');
+      // 账本里的 key 可能是 deepseek-v4-pro @workbuddy（第三方路由带上入口名）：
+      // 前面的模型 id 照常翻译成显示名，后半段（空格 + @ + 路由名）原样留在后面
+      const raw = String(id || '');
+      const at = raw.indexOf(' @');
+      const head = at >= 0 ? raw.slice(0, at) : raw;
+      const tail = at >= 0 ? raw.slice(at) : '';
+      const k = head.trim().toLowerCase();
+      return (MODEL_LABEL[k] || head) + tail;
     }
 
     function shortModel(v) {

@@ -108,13 +108,15 @@ ok(archived && Math.abs(archived.used - 5.5) < 1e-6, '归档金额 = 5.5', archi
 ok(readState().date !== '2026-10-24', '账本日期已翻到今天', readState().date)
 ok(readState().todayUsed === 0, '新的一天从 0 起算', '实际 ' + readState().todayUsed)
 
-// ---------- 7. 价格表与路由闸门：拿不准就不算钱 ----------
-console.log('\n[7] 未计价：表里没有的模型 / 非官方路由')
+// ---------- 7. 价格表与路由：表外模型不猜价，第三方路由照官方价记 ----------
+console.log('\n[7] 未计价只留给表外模型；第三方路由也记账')
 const P = mod.priceFor
 ok(!!P('deepseek-flash'), 'deepseek-flash 在价表里')
 ok(P('deepseek-v4-flash') === P('deepseek-flash'), '旧名 deepseek-v4-flash 走别名，同价')
 ok(P('deepseek-flash', 'deepseek-account') === P('deepseek-flash'), '官方账号路由照常计价')
-ok(P('deepseek-flash', 'workbuddy') === null, '第三方路由上的同名模型不按官方价算')
+// 2026-11-14 改口径：白名单只用于标注，不再是计价闸门。
+// 挡掉的后果是账本比 DSH 的「总消费」少一截（实测 566.30 vs 624.87，其中 45.11 就在这条上）。
+ok(P('deepseek-flash', 'workbuddy') === P('deepseek-flash'), '第三方路由上的同名模型按同一张价表计价')
 ok(P('deepseek-chat') === null, '表里没有的模型不给价（不猜）')
 
 const usedBefore7 = readState().todayUsed
@@ -129,13 +131,15 @@ const s7 = await getState()
 ok(s7.lastTurn && s7.lastTurn.amount === null, 'state.lastTurn.amount = null（界面显示"未计价"而不是 ¥0.00）', JSON.stringify(s7.lastTurn))
 ok(Number(s7.todayUnpriced) === 1, 'state.todayUnpriced = 1', String(s7.todayUnpriced))
 
-// 第三方路由 + 官方同名模型：同样不记钱
+// 第三方路由 + 官方同名模型：现在必须按官方价记账，并且分组名带 @路由
 const usedBefore7b = readState().todayUsed
 sendMsg(4, { inputTokens: 1_000_000, cacheReadTokens: 0, cacheWriteTokens: 0, outputTokens: 0 }, 'deepseek-flash', 'workbuddy')
 endTurn()
 st = readState()
-ok(Math.abs(st.todayUsed - usedBefore7b) < 1e-9, '第三方路由再跑一轮仍不加钱', '今日已用 ' + st.todayUsed)
-ok(Number(st.todayUnpriced) === 2, '未计价累计到 2', '实际 ' + st.todayUnpriced)
+ok(Math.abs(st.todayUsed - (usedBefore7b + MISS)) < 1e-6, '第三方路由那轮按官方价记了 ' + MISS + ' 元', '今日已用 ' + st.todayUsed)
+ok(Number(st.todayUnpriced) === 1, '未计价仍然只有 qwen-max 那 1 轮', '实际 ' + st.todayUnpriced)
+const modelKeys = Object.keys(st.todayByModel || {})
+ok(modelKeys.some((k) => k.indexOf('deepseek-flash @workbuddy') === 0), '按模型分组带上了 @workbuddy', JSON.stringify(modelKeys))
 
 // ---------- 8. 放假表覆盖年份 ----------
 console.log('\n[8] 放假表覆盖与告警')
@@ -143,6 +147,27 @@ ok(mod.hasHolidayCoverage(Date.parse('2026-06-01T00:00:00+08:00')) === true, '20
 ok(mod.hasHolidayCoverage(Date.parse('2027-06-01T00:00:00+08:00')) === false, '2027 年未覆盖（要告警、要补表）')
 const s8 = await getState()
 ok(s8.peak && s8.peak.holidayOk === true && s8.peak.holidayThrough === 2026, 'state.peak 带覆盖信息', JSON.stringify(s8.peak))
+
+// ---------- 9. 压缩摘要那笔也要记账 ----------
+// compaction/summary 是压缩时真发的一次摘要调用，真扣钱；以前只认 assistant/message，
+// 这块（实测 16 次、¥1.07）一分没进账。
+console.log('\n[9] 压缩摘要（compaction/summary）入账')
+const OUT = peakNow ? 8 : 4   // flash 输出价：谷 4 / 峰 8（元/百万）
+const usedBefore9 = readState().todayUsed
+handlers['session/event'](SID, {
+  type: 'compaction/summary',
+  data: {
+    compactionId: 'c1',
+    model: 'deepseek-flash',
+    provider: 'deepseek-account',
+    usage: { inputTokens: 500000, cacheReadTokens: 0, cacheWriteTokens: 0, outputTokens: 100000 },
+  },
+})
+endTurn()
+st = readState()
+const expect9 = usedBefore9 + 0.5 * MISS + 0.1 * OUT
+ok(Math.abs(st.todayUsed - expect9) < 1e-6, '压缩摘要的 token 计进今日已用（' + expect9.toFixed(2) + ' 元）', '实际 ' + st.todayUsed)
+ok(Number(st.todayUnpriced) === 1, '压缩摘要不该被算成未计价', '实际 ' + st.todayUnpriced)
 
 console.log('\n' + (fails ? '结果：' + fails + ' 项失败' : '结果：全部通过'))
 process.exit(fails ? 1 : 0)

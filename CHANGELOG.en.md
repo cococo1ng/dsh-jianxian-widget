@@ -3,6 +3,29 @@
 User-visible changes. Versions follow [SemVer](https://semver.org/).
 Versions before 4.19.2 are documented in the Chinese [CHANGELOG.md](CHANGELOG.md).
 
+## 4.28.0 · 2026-11-14 · The ledger now reconciles with the DSH "total spent": third-party routes are no longer kept out of the books
+
+- **Symptom**: the panel's "All time" showed ¥566.30 while DSH showed ¥624.87 — ¥58.57 short.
+- **Three root causes**:
+  1. `priceFor()` used `OFFICIAL_PROVIDERS` as a pricing gate, so the same `deepseek-flash` /
+     `deepseek-v4-pro` served through a third-party gateway (Workbuddy, modlens, …) was marked
+     "未计价" — tokens recorded, money dropped (¥45.11 in total; 11-04 alone: plugin ¥20.25 vs ¥65.66);
+  2. `compaction/summary` — the summarisation call made during compaction — was never handled,
+     dropping 16 real calls worth ¥1.07;
+  3. the earlier days' `daily` rows came from a one-off backfill whose basis differed from the live
+     accumulator (10-20 / 10-22 / 10-23 / 10-29 / 11-01 were about ¥11 short together).
+- **Fix**: the provider list is now a label, not a gate — one price table whatever the entry point,
+  and the per-model breakdown appends ` @route` so you can tell which entry a charge came through;
+  `handleSessionEvent()` also accepts `compaction/summary` (same four token fields);
+  `tools/backfill.mjs` was rewritten to recompute and rewrite `daily` on the same basis, and the two
+  missing days (11-08 / 11-09, all free-tier traffic worth ¥0) are filled in.
+- **Caveat**: the estimate still uses the official price table; a third-party route's real contract
+  price may differ. That is why the route is printed per row — read the row, not just the total, when
+  you only care about what the official account was actually billed.
+- Guards: `test-billing` 28 → 31 assertions (route pricing, `@route` grouping, compaction charge);
+  `test-teeth` gains M19 (third-party route gated out again) and M20 (compaction charge dropped),
+  and M8 moved to the price-table gate.
+
 ## 4.27.8 · 2026-11-12 · Ledger history no longer vanishes: the missing "last 7 days / all time" money is back
 
 - **An empty `daily` wipes out the whole history**: the "Last 7 days" and "All time" totals only read

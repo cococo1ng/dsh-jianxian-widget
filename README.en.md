@@ -137,7 +137,7 @@ npm test          # eight guard suites, ~1 min
 
 Guards: copy/number consistency, i18n coverage (source + built bundle), config-merge
 coverage, structural completeness, static audit of the guards themselves, 45 route/write-fence
-assertions, 28 billing assertions, and 11 mutants that must turn the guards red.
+assertions, 31 billing assertions, and 20 mutants that must turn the guards red.
 
 Real-browser smoke tests (Playwright + Chromium):
 
@@ -167,8 +167,11 @@ verify/               browser smoke harness
 - `sword` / `wipe` key names are swapped relative to the artwork (display names are corrected).
 - Userscript: no balance/ledger (`—`), and strict CSP sites may block the inline `<style>`.
 - Only models present in the price table (`deepseek-flash`, `deepseek-v4-pro`, plus old-name aliases)
-  are priced. Anything else — including the same model name served by a third-party gateway — records
-  tokens but no money, and the bubble says "未计价". Deliberate: no number beats a wrong number.
+  are priced, and **the entry point does not change the price**: the same model name served through a
+  third-party gateway is still priced, with the route appended as ` @route` in the per-model breakdown.
+  Models absent from the table record tokens but no money, and the bubble says "未计价" —
+  deliberate: a missing number beats a wrong number. v4.28.0 dropped the route from the pricing gate so
+  the ledger reconciles with the DSH "total spent".
 - The public-holiday table covers 2026 only. Until the State Council publishes 2027, holidays are
   treated as workdays; the host warns once a day and the self-check panel shows a hint.
 

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         青云剑仙 · Azure Cloud Sword Immortal
 // @namespace    xjj-widget
-// @version      4.27.8
+// @version      4.28.0
 // @description  网页右下角的青云剑仙：白发墨金的大师兄，23 姿态 + 24 帧剑舞 + 14 件法宝 + 10 路音效，会催你喝水、劝你早睡、闲了剑舞御剑。全部素材内联，不联网、不上报、不占 token。
 // @author       Azure Cloud Sword Immortal
 // @match        *://*/*
@@ -39,12 +39,12 @@
  * 数据落点：localStorage（配置、微量账本），不联网、不上报。
  * 余额 / 账本 / 提问提醒在网页版里没有数据源 —— 状态里如实留空，界面显示「—」。
  *
- * 由 build.py 注入 4.27.8 后拼进 dist/xjj.user.js；DSH 版不使用本文件。
+ * 由 build.py 注入 4.28.0 后拼进 dist/xjj.user.js；DSH 版不使用本文件。
  */
 window.__XJJ_HOST__ = (function () {
   'use strict'
 
-  var VERSION = '4.27.8'
+  var VERSION = '4.28.0'
   var KEY_CFG = 'xjj.cfg.v1'
   var KEY_STATE = 'xjj.state.v1'
 
@@ -1166,8 +1166,14 @@ window.__XJJ_HOST__ = (function () {
       'deepseek-v4-pro': 'DS-V4.1-Pro',
     };
     function modelLabel(id) {
-      const k = String(id || '').trim().toLowerCase();
-      return MODEL_LABEL[k] || String(id || '');
+      // 账本里的 key 可能是 deepseek-v4-pro @workbuddy（第三方路由带上入口名）：
+      // 前面的模型 id 照常翻译成显示名，后半段（空格 + @ + 路由名）原样留在后面
+      const raw = String(id || '');
+      const at = raw.indexOf(' @');
+      const head = at >= 0 ? raw.slice(0, at) : raw;
+      const tail = at >= 0 ? raw.slice(at) : '';
+      const k = head.trim().toLowerCase();
+      return (MODEL_LABEL[k] || head) + tail;
     }
 
     function shortModel(v) {
@@ -2958,7 +2964,7 @@ window.__XJJ_HOST__ = (function () {
             showSpecial([{ style: { fontSize: 11.5 }, modules: [{ type: 'text', text: __xjjT('路径已复制：') + p }] }], 6000);
           })),
           Row(__xjjT('自检'), Btn(__xjjT('产物 / 构建'), () => { setMenuOpen(false); showAbout(); })),
-          Row(__xjjT('版本'), h('b', { className: 'xjj-val', style: { color: 'var(--xjj-text-strong)' } }, 'v4.27.8')),
+          Row(__xjjT('版本'), h('b', { className: 'xjj-val', style: { color: 'var(--xjj-text-strong)' } }, 'v4.28.0')),
         ];
       })();
 
@@ -3317,7 +3323,7 @@ window.__XJJ_HOST__ = (function () {
             h('span', null, __xjjT('青云剑仙')),
             h('button', { className: 'xjj-mini', onClick: () => setAboutOpen(false) }, __xjjT('关闭'))),
           h('div', { className: 'xjj-ed-body xjj-ab-body' },
-            h('div', { className: 'xjj-ab-sub' }, __xjjT('黑衣与白衣双衣装 · 中英双语 · DSH 桌面挂件'), ' · v4.27.8'),
+            h('div', { className: 'xjj-ab-sub' }, __xjjT('黑衣与白衣双衣装 · 中英双语 · DSH 桌面挂件'), ' · v4.28.0'),
             h('p', { className: 'xjj-ab-lead' }, __xjjT('常驻屏幕右下角：盯余额、记消耗，也会催你早点睡')),
             h('div', { className: 'xjj-ab-sec' }, __xjjT('<能做什么>')),
             h('div', { className: 'xjj-ab-row' },

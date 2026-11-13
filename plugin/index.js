@@ -341,8 +341,11 @@ const MODEL_ALIASES = {
   'deepseek-v4-flash-vision-exp': 'deepseek-flash',
 }
 
-// DeepSeek 官方路由的 provider id。第三方网关（中转、Workbuddy、Qwen token-plan…）上
-// 也可能挂着同名的 deepseek-flash，但按各自合同计费，用官方价表算出来的数字没有意义。
+// DeepSeek 官方路由的 provider id。只用来在账本里标注「这笔走的是官方账号」，
+// **不再当计价闸门**（2026-11-14 改）：第三方网关（Workbuddy、modlens、lobsterai…）上
+// 挂着同名的 deepseek-flash / v4-pro 时，也是同一个模型、同一张价目表，
+// 拿它挡掉只会让账本比 DSH 的「总消费」少一截——实测 566.30 vs 624.87，差的 58.57 里
+// 有 45.11 就是被这道白名单挡掉的 workbuddy 调用。未计价的判定现在只留给「价表里没有的模型」。
 const OFFICIAL_PROVIDERS = ['deepseek-official', 'deepseek-account']
 
 function canonicalModel(model) {
@@ -350,10 +353,17 @@ function canonicalModel(model) {
   return MODEL_ALIASES[id] || id
 }
 
-// 返回 null = 这个模型不该按官方价表算（不在表里，或不是官方路由）
-export function priceFor(model, provider) {
-  if (provider && OFFICIAL_PROVIDERS.indexOf(String(provider).toLowerCase()) < 0) return null
+// 返回 null = 价表里没有这个模型（不猜价，账本里标「未计价」）。
+// provider 参数留着只为调用点兼容与标注，不参与是否计价的判断。
+export function priceFor(model) {
   return PRICE_TABLE[canonicalModel(model)] || null
+}
+
+// provider → 界面上的小尾巴：官方路由不标，第三方路由标出来（"模型 @路由"）
+function providerTag(provider) {
+  const p = String(provider || '').trim()
+  if (!p) return ''
+  return OFFICIAL_PROVIDERS.indexOf(p.toLowerCase()) >= 0 ? '' : ' @' + p
 }
 
 // 报错话术：错误码 → 一句"能照着做"的中文。上游原文只进宿主日志，不进界面
@@ -484,7 +494,8 @@ export function apply(ctx) {
     led.todayTokens = Number(led.todayTokens || 0) + Number(agg.tokens || 0)
     if (unpriced) led.todayUnpriced = Number(led.todayUnpriced || 0) + unpriced
     // 今日按模型的累计：跨天时整份搬进 daily，所以「全部 / 模型占比」不用回读历史明细
-    const mkey = agg.model || '未知模型'
+    // 第三方路由在名字后面挂 " @路由"，同一模型走不同入口时金额分得开
+    const mkey = (agg.model || '未知模型') + providerTag(agg.provider)
     const mrow = (led.todayByModel && led.todayByModel[mkey]) || { amount: 0, turns: 0, tokens: 0 }
     led.todayByModel = led.todayByModel || {}
     led.todayByModel[mkey] = {
@@ -498,6 +509,7 @@ export function apply(ctx) {
       amount: agg.cost,
       tokens: agg.tokens,
       model: agg.model || null,
+      ...(agg.provider ? { provider: agg.provider } : {}),
       ...(unpriced ? { unpriced: unpriced } : {}),
     })
     // 明细保留：只留 90 天、最多 MAX_TURNS 条；被挤出去的进归档（自己留一份，别直接丢）
@@ -613,14 +625,24 @@ export function apply(ctx) {
       if (!d || typeof d !== 'object') return
       noteWaitEvent(sid, type, d)
       if (type === 'turn/end') { finalizeTurn(sid); return }
-      if (type !== 'assistant/message') return
-      const turn = Number(d.turn)
+      // 也收压缩摘要：compaction/summary 那次摘要调用同样是真调用、真扣钱，
+      // 以前只认 assistant/message，这块（实测 16 次、¥1.07）一分没进账。
+      const isMsg = type === 'assistant/message'
+      const isCompact = type === 'compaction/summary'
+      if (!isMsg && !isCompact) return
       const usage = d.usage
-      if (!usage || typeof usage !== 'object' || !Number.isFinite(turn)) return
+      if (!usage || typeof usage !== 'object') return
+      const turn = isMsg ? Number(d.turn) : null
+      if (isMsg && !Number.isFinite(turn)) return
       let agg = turnAggs.get(sid)
-      if (!agg || agg.turn !== turn) {
+      if (isMsg && (!agg || agg.turn !== turn)) {
         if (agg) finalizeTurn(sid)
-        agg = { turn, tokens: 0, cost: 0, model: '', startedAt: Date.now() }
+        agg = { turn, tokens: 0, cost: 0, model: '', provider: '', startedAt: Date.now() }
+        turnAggs.set(sid, agg)
+      } else if (!agg) {
+        // 轮首压缩：摘要先于这一轮的任何 assistant/message 到达，此时没有正在进行的轮次。
+        // 单开一个槽先把钱记上，等这一轮的消息来了再各自结算（金额不会丢）。
+        agg = { turn: null, tokens: 0, cost: 0, model: '', provider: '', startedAt: Date.now() }
         turnAggs.set(sid, agg)
       }
       const input = Number(usage.inputTokens) || 0
@@ -628,14 +650,16 @@ export function apply(ctx) {
       const cacheWrite = Number(usage.cacheWriteTokens) || 0   // 缓存写入，之前漏算
       const output = Number(usage.outputTokens) || 0 // 已包含 reasoning
       const toks = input + cached + cacheWrite + output
-      const source = (d.message && d.message.source) || {}
+      // 压缩摘要的 provider/model 在 data 顶层，assistant/message 的挂在 message.source 上
+      const source = isMsg ? ((d.message && d.message.source) || {}) : { model: d.model, provider: d.provider }
       const model = source.model || ''
-      const provider = source.provider || source.route || currentProvider()
-      const price = priceFor(model, provider)
+      const provider = source.provider || source.route || (isMsg ? currentProvider() : '')
+      const price = priceFor(model)
       const off = peakState(Date.now()).peak ? 1 : 0
       agg.tokens += toks
       if (model) agg.model = model
-      // 价格表里没有 / 不是官方路由：只记 token，不猜钱。账本里这一轮标成"未计价"
+      if (provider) agg.provider = provider
+      // 价表里没有的模型：只记 token，不猜钱。账本里这一轮标成"未计价"
       if (!price) { agg.unpriced = (agg.unpriced || 0) + 1; return }
       // 缓存写入按「未命中输入」价计（DeepSeek 口径）；命中单独按 hit 价
       const cost = (cached / 1e6) * price.hit[off]
