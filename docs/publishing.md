@@ -1,17 +1,22 @@
 # 发布到 npm
 
-> **当前状态（2026-11-14 01:30）**
+> **当前状态（2026-11-14 01:45）**
 >
-> - **线上 latest**：`dsh-jianxian-widget@4.27.8`（4.27.6 之前的历史见下）
+> - **线上 latest**：`dsh-jianxian-widget@4.28.0`（2026-11-13 17:41 UTC 发出）
 >   https://www.npmjs.com/package/dsh-jianxian-widget
-> - **本次待发**：`4.28.0` —— 代码已 commit `5ba9199` + tag `v4.28.0` 推上 GitHub；
->   `python scripts/release.py` 全绿（tgz 5.20 MB / 11 个文件）；
->   **只剩 npm 发布这一步**（`publish to npm` workflow 仍卡 OIDC，必须按下面第 5–8 步用 granular token 手动发）
-> - 仓库：https://github.com/cococo1ng/dsh-jianxian-widget （public，默认分支 main）
+>   tgz shasum `e9090ac10f1182f832cd0a5be702b888caa4856b`，11 个文件 / 5.2 MB tgz / 6.9 MB 解包
+> - **发布方式**：本机 granular token（Bypass 2FA / All packages / 7 天 / Read and write (publish and stage)），
+>   **发完立刻在网页删掉**（页面回显「deleted 1 token」），临时 npmrc 与本地 token 文件也已删
+> - 仓库：https://github.com/cococo1ng/dsh-jianxian-widget （public，main `ed4e22c`，tag `v4.28.0` 已推）
+>   —— `ci` 会跑；`publish to npm` workflow 仍卡 OIDC，tag 触发的那次会停在 npm publish，属已知情况
+> - **SkillHub**：skill `qingyun-jianxian` 已提交 **1.3.0**（对应插件 4.28.0），状态「待审核」
+>   https://deepseek.stream/skills/qingyun-jianxian
+>   上传只收单个 `SKILL.md`（512 KB 上限），`references/` 三个附件只存在于 GitHub 仓库
+> - **SKILL.md 的三个平台坑（这次踩的）**：
+>   1. frontmatter 必须有 `title`，否则平台取 `title || name`，显示名会变成英文 ID；
+>   2. 必须有 `whenToUse`，否则「适用场景」那张表空白，模型无法按意图命中；
+>   3. `category` 不写会落默认 `dev`（我们是 `tools`）。
 > - Repository / homepage / Bugs 三个字段已填
-> - **4.27.6 / 4.27.8 都是本机用 granular token（Bypass 2FA）发的**，token 发完立刻吊销，`.npmrc` 已清干净
-> - 同一个版本号还要同步到 **SkillHub skill `qingyun-jianxian`**（本次 1.2.0 → 1.3.0，文件在
->   `_publish/skillhub-publish/SKILL.md`，网页「开发者上架中心」上传）
 >
 > **为什么不用 OIDC（这条仍没走通，别再花时间重推 tag 试）**
 >
