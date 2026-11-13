@@ -1,13 +1,17 @@
 # 发布到 npm
 
-> **当前状态（2026-11-08 11:20）**
+> **当前状态（2026-11-14 01:30）**
 >
-> - **线上 latest**：`dsh-jianxian-widget@4.27.6`（2026-11-08 03:12 UTC 发出）
->   https://www.npmjs.com/package/dsh-jianxian-widget （MIT，11 个文件，5.2 MB tgz / 6.9 MB 解包）
-> - 仓库：https://github.com/cococo1ng/dsh-jianxian-widget （public，默认分支 main，CI 绿）
+> - **线上 latest**：`dsh-jianxian-widget@4.27.8`（4.27.6 之前的历史见下）
+>   https://www.npmjs.com/package/dsh-jianxian-widget
+> - **本次待发**：`4.28.0` —— 代码已 commit `5ba9199` + tag `v4.28.0` 推上 GitHub；
+>   `python scripts/release.py` 全绿（tgz 5.20 MB / 11 个文件）；
+>   **只剩 npm 发布这一步**（`publish to npm` workflow 仍卡 OIDC，必须按下面第 5–8 步用 granular token 手动发）
+> - 仓库：https://github.com/cococo1ng/dsh-jianxian-widget （public，默认分支 main）
 > - Repository / homepage / Bugs 三个字段已填
-> - 4.27.6 已 commit（`9bb6bb1`）、打完 tag `v4.27.6` 并推上 GitHub；`ci`（main 与 tag 各一次）全绿
-> - **4.27.6 是本机用 granular token（Bypass 2FA）发的**，token 发完立刻吊销，`.npmrc` 已清干净
+> - **4.27.6 / 4.27.8 都是本机用 granular token（Bypass 2FA）发的**，token 发完立刻吊销，`.npmrc` 已清干净
+> - 同一个版本号还要同步到 **SkillHub skill `qingyun-jianxian`**（本次 1.2.0 → 1.3.0，文件在
+>   `_publish/skillhub-publish/SKILL.md`，网页「开发者上架中心」上传）
 >
 > **为什么不用 OIDC（这条仍没走通，别再花时间重推 tag 试）**
 >
