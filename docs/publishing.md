@@ -1,17 +1,23 @@
 # 发布到 npm
 
-> **当前状态（2026-11-14 01:45）**
+> **当前状态（2026-11-20 00:50）**
 >
-> - **线上 latest**：`dsh-jianxian-widget@4.28.0`（2026-11-13 17:41 UTC 发出）
+> - **GitHub**：main `29f4b87`、tag `v4.31.0` 已推（直连可用，**不用带代理**）
+> - **npm latest**：`dsh-jianxian-widget@4.28.0` —— 4.31.0 **待发**，缺 granular token（流程见下）
 >   https://www.npmjs.com/package/dsh-jianxian-widget
->   tgz shasum `e9090ac10f1182f832cd0a5be702b888caa4856b`，11 个文件 / 5.2 MB tgz / 6.9 MB 解包
-> - **发布方式**：本机 granular token（Bypass 2FA / All packages / 7 天 / Read and write (publish and stage)），
->   **发完立刻在网页删掉**（页面回显「deleted 1 token」），临时 npmrc 与本地 token 文件也已删
-> - 仓库：https://github.com/cococo1ng/dsh-jianxian-widget （public，main `ed4e22c`，tag `v4.28.0` 已推）
->   —— `ci` 会跑；`publish to npm` workflow 仍卡 OIDC，tag 触发的那次会停在 npm publish，属已知情况
-> - **SkillHub**：skill `qingyun-jianxian` 已提交 **1.3.0**（对应插件 4.28.0），状态「待审核」
+> - **SkillHub**：skill `qingyun-jianxian` **1.4.0 已提交，待审核**（对应插件 4.31.0）
 >   https://deepseek.stream/skills/qingyun-jianxian
->   上传只收单个 `SKILL.md`（512 KB 上限），`references/` 三个附件只存在于 GitHub 仓库
+>   改版走「个人中心 → 我的 Skill → 编辑 → 拖入新 SKILL.md → 填更新日志 → 保存并提交审核」，
+>   平台校验「新版本必须高于现有版本」；`/upload` 那条新建路径对已发布的 skill 会拒
+>   （「你已发布过此 Skill」）
+> - **插件市场（deepseek.stream）**：`dsh-jianxian-widget` **v4.31.0 已提交，待审核**
+>   路径同上：个人中心 → 我的插件 → 编辑 → 上传 .zip（就地更新）→ 按钮会变成
+>   「确认发布新版本并就地更新 (vX.Y.Z)」→ 点它才真正提交
+> - **awesome-dsh-plugin**（DSH 客户端市场索引）：条目已收录，`url` 指向 `main/plugin`，
+>   装到的就是最新 main；**描述仍是 4.28 时期**（未提对账 / 按会话 / 本月 / 交流群）
+> - 发布顺序建议：build → npm test → `scripts/release.py` → git commit/tag/push →
+>   打两个 zip（`_publish/dsh-jianxian-widget-<v>.zip`、`_publish/skillhub-cn-qingyun-jianxian-<v>.zip`）→
+>   传插件市场 + SkillHub → 最后 npm（要 token）
 > - **SKILL.md 的三个平台坑（这次踩的）**：
 >   1. frontmatter 必须有 `title`，否则平台取 `title || name`，显示名会变成英文 ID；
 >   2. 必须有 `whenToUse`，否则「适用场景」那张表空白，模型无法按意图命中；
