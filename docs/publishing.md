@@ -11,10 +11,17 @@
 > - **npm 发布后别急着报错**：`npm publish` 打印 `+ pkg@ver` 之后，registry 要**约 6 分钟**才见得到新版本；
 >   这中间 `npm view` 一直报旧 latest、`@ver` 404、Staged Packages 页也是空的（不是 staged，就是慢）。
 >   判断标准只有一条：直接读 `registry.npmjs.org/<pkg>` 的 `dist-tags.latest` 与 `time.modified`
-> - **SkillHub（skillhub.cn，腾讯）**：skill `qingyun-jianxian` **V1.4.0 已提交，状态「安全审核中」**
+> - **SkillHub（skillhub.cn，腾讯）**：skill `qingyun-jianxian` **V1.4.1 安全审核中**（1.4.0 已发布，
+>   4.6 优秀 / 77 下载；1.4.1 只是补图标）
 >   https://skillhub.cn/dashboard （我的 Skills）
 >   发布路径：`/dashboard/publish` → 发布 Skill → 拖入含 `SKILL.md` 的 zip（≤200 文件 / ≤10 MB）
 >   → 填 Slug / 显示名 / 版本 / 变更说明 → 提交审核
+> - **skillhub.cn 的三个坑（2026-11-20 实测）**：
+>   1. **图标默认是「预设图标」**（紫色方块占位），不切「自定义」就永远是占位图 —— 首次发布就是这么丢了 logo。
+>      要切「自定义」→「点击上传图片」→ 选 png（64×64 ~ 4096×4096，≤5 MB）→ 弹层里再点一次「上传」；
+>   2. 更新时 **Skill 文件是必填**：没传新 zip 就点「复用当前版本」，否则点「更新 Skill」静默无反应；
+>   3. 更新时**变更说明必填**、版本号平台会自动 +1（1.4.0 → 1.4.1）；只改图标也必须走一次「更新」并重新审核。
+>   图标上传后要过合规审核才公开展示，所以刚提交时详情页看到的还是旧图/占位图。
 > - **SkillHub 的 Plugin 广场没有提交入口**（2026-11-20 实测）：整页只有 `owner/repo` 索引与本机安装提示，
 >   全是 GitHub 收录制，页面底部只有「建议反馈」。要上插件广场只能走反馈申请或等官方索引，
 >   **不是漏做，是没门**
