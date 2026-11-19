@@ -1,23 +1,31 @@
 # 发布到 npm
 
-> **当前状态（2026-11-20 00:50）**
+> **当前状态（2026-11-20 01:10）**
 >
-> - **GitHub**：main `29f4b87`、tag `v4.31.0` 已推（直连可用，**不用带代理**）
-> - **npm latest**：`dsh-jianxian-widget@4.28.0` —— 4.31.0 **待发**，缺 granular token（流程见下）
+> - **GitHub**：main `c3a6591`、tag `v4.31.0` 已推（直连可用，**不用带代理**）
+> - **npm latest**：`dsh-jianxian-widget@4.31.0`（2026-11-19 17:04 UTC 发出）
 >   https://www.npmjs.com/package/dsh-jianxian-widget
-> - **SkillHub**：skill `qingyun-jianxian` **1.4.0 已提交，待审核**（对应插件 4.31.0）
->   https://deepseek.stream/skills/qingyun-jianxian
->   改版走「个人中心 → 我的 Skill → 编辑 → 拖入新 SKILL.md → 填更新日志 → 保存并提交审核」，
->   平台校验「新版本必须高于现有版本」；`/upload` 那条新建路径对已发布的 skill 会拒
->   （「你已发布过此 Skill」）
-> - **插件市场（deepseek.stream）**：`dsh-jianxian-widget` **v4.31.0 已提交，待审核**
->   路径同上：个人中心 → 我的插件 → 编辑 → 上传 .zip（就地更新）→ 按钮会变成
->   「确认发布新版本并就地更新 (vX.Y.Z)」→ 点它才真正提交
+>   11 个文件 / 5.2 MB tgz / 7.0 MB 解包，shasum `c8d4ca6884c0557b61b055630825d050c63fe81a`
+>   —— 这次用 granular token（Bypass 2FA 勾上**没有**弹密码，直接生成）+ 临时 npmrc 发出，
+>   **发完已在网页删掉**（回显「deleted 1 token」），本地临时 npmrc 与 token 文件均已删
+> - **npm 发布后别急着报错**：`npm publish` 打印 `+ pkg@ver` 之后，registry 要**约 6 分钟**才见得到新版本；
+>   这中间 `npm view` 一直报旧 latest、`@ver` 404、Staged Packages 页也是空的（不是 staged，就是慢）。
+>   判断标准只有一条：直接读 `registry.npmjs.org/<pkg>` 的 `dist-tags.latest` 与 `time.modified`
+> - **SkillHub（skillhub.cn，腾讯）**：skill `qingyun-jianxian` **V1.4.0 已提交，状态「安全审核中」**
+>   https://skillhub.cn/dashboard （我的 Skills）
+>   发布路径：`/dashboard/publish` → 发布 Skill → 拖入含 `SKILL.md` 的 zip（≤200 文件 / ≤10 MB）
+>   → 填 Slug / 显示名 / 版本 / 变更说明 → 提交审核
+> - **SkillHub 的 Plugin 广场没有提交入口**（2026-11-20 实测）：整页只有 `owner/repo` 索引与本机安装提示，
+>   全是 GitHub 收录制，页面底部只有「建议反馈」。要上插件广场只能走反馈申请或等官方索引，
+>   **不是漏做，是没门**
+> - **deepseek.stream（DeepSeek Harness Hub，另一个站，别和 SkillHub 混）**：
+>   插件 `dsh-jianxian-widget` **v4.31.0 待审核**（描述已更新为含按会话 / 本月 / 对账 / 交流群）；
+>   Skill `qingyun-jianxian` **1.4.0 待审核**
 > - **awesome-dsh-plugin**（DSH 客户端市场索引）：条目已收录，`url` 指向 `main/plugin`，
->   装到的就是最新 main；**描述仍是 4.28 时期**（未提对账 / 按会话 / 本月 / 交流群）
-> - 发布顺序建议：build → npm test → `scripts/release.py` → git commit/tag/push →
+>   装到的就是最新 main
+> - 发布顺序：build → `npm test` → `scripts/release.py` → git commit/tag/push →
 >   打两个 zip（`_publish/dsh-jianxian-widget-<v>.zip`、`_publish/skillhub-cn-qingyun-jianxian-<v>.zip`）→
->   传插件市场 + SkillHub → 最后 npm（要 token）
+>   传 deepseek.stream 插件 + skillhub.cn 的 Skill → 最后 npm（要 token）
 > - **SKILL.md 的三个平台坑（这次踩的）**：
 >   1. frontmatter 必须有 `title`，否则平台取 `title || name`，显示名会变成英文 ID；
 >   2. 必须有 `whenToUse`，否则「适用场景」那张表空白，模型无法按意图命中；
