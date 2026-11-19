@@ -172,6 +172,21 @@ def main():
         "repo": args.repo_url or None,
     }, ensure_ascii=False, indent=2))
 
+    # —— 发版后的人工步骤提醒（2026-11-20 加）——
+    # 为什么打在 release.py 里：图标这件事漏过一次（skillhub 首版用的是平台预设占位图），
+    # 但发布清单写在 docs 里没人会在发版那一刻去翻。这里每次发版都顶在眼前。
+    print("\n" + "=" * 62)
+    print("发版后还得手动做这几步（漏一步就得再走一次审核）：")
+    print("  1. git add -A && git commit && git tag v%s && git push origin main && git push origin v%s"
+          % (version, version))
+    print("  2. npm：网页建 granular token（Bypass 2FA + Read and write + All packages + 7 天）→ 临时 npmrc 发布 → 删 token")
+    print("  3. deepseek.stream 插件市场：编辑 → 上传 _publish/dsh-jianxian-widget-%s.zip → 点「确认发布新版本并就地更新」" % version)
+    print("  4. skillhub.cn Skill：发布/更新 → 拖入 _publish/skillhub-cn-qingyun-jianxian-*.zip →")
+    print("     ⚠️ 图标必须切「自定义」→ 点击上传图片 → 选 plugin/icon.png → 弹层里再点「上传」")
+    print("     （默认是平台预设的紫色方块占位图，不切就永远是它）")
+    print("  5. 更新时 Skill 文件必填（没新 zip 就点「复用当前版本」）、变更说明必填，否则点提交静默无反应")
+    print("=" * 62)
+
 
 if __name__ == "__main__":
     main()

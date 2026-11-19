@@ -1,6 +1,22 @@
 # 发布到 npm
 
-> **当前状态（2026-11-20 01:10）**
+## 发版检查清单（每次发版照着走，漏一项就得再走一轮审核）
+
+| # | 步骤 | 最容易漏的点 |
+|---|---|---|
+| 0 | `python build.py --target all` → `npm test` → `python scripts/release.py` | 全绿才往下（release.py 会把下面几步再打印一遍） |
+| 1 | 改版本号 4 处 + CHANGELOG 中英 + 打两个 zip | README 版本在**表格行**，正文提到旧版号不算错 |
+| 2 | `git commit` + `git tag vX.Y.Z` + push main 与 tag | 直连就行，不用代理 |
+| 3 | npm：token → 临时 npmrc → publish → **删 token** | 发完 registry 要 **≈6 分钟**才见到新版本，别急着判失败 |
+| 4 | deepseek.stream 插件市场：编辑 → 传 zip → **点「确认发布新版本并就地更新 (vX.Y.Z)」** | 按钮会从「保存修改并即时生效」变名字，点旧的等于没点 |
+| 5 | skillhub.cn Skill：发布/更新 → 传 zip → **图标切「自定义」传 plugin/icon.png** | ⚠️ **默认是平台预设的紫色方块**，不切就永远显示占位图 —— logo 白设计了 |
+| 6 | 更新已有 Skill 时：Skill 文件必填（无新 zip 点「复用当前版本」）、变更说明必填 | 缺任何一项，「更新 Skill」点下去**静默无反应** |
+| 7 | 平台状态回报：deepseek.stream「待审核」/ skillhub.cn「安全审核中」 | 图标与版本都要过审才公开 |
+
+> 图标不是装饰：`plugin/icon.png`（512×512）就是插件在客户端、市场列表、Skill 详情页的脸。
+> 每上传一次带图标的版本，都得在图标区确认显示的是剑仙立绘（不是紫色方块、不是旧版图）。
+>
+> **当前状态（2026-11-20 01:45）**
 >
 > - **GitHub**：main `c3a6591`、tag `v4.31.0` 已推（直连可用，**不用带代理**）
 > - **npm latest**：`dsh-jianxian-widget@4.31.0`（2026-11-19 17:04 UTC 发出）
