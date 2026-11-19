@@ -349,6 +349,7 @@
   "点他说话，按队列轮播 · 每行字号、颜色、加粗都能在面板里现改": "Click him to talk, played as a queue · size, colour and weight of each line editable in the panel",
   "余额 · 今日已用 · 今日轮数 · 最近一笔 · 近 7 天柱图": "Balance · spent today · turns today · last charge · 7-day bars",
   "按模型占比 · 逐条明细可搜": "per-model share · searchable entries",
+  "按模型占比 · 按会话 · 本月已用 · 与 DSH 对账 · 逐条明细可搜": "per-model share · per session · this month · reconcile vs DSH · searchable entries",
   "余额告急 · 每轮消耗 · 提问与授权提醒 · 今日预算 · 深夜劝睡 · 喝水歇眼": "Low balance · per-turn cost · question and approval alerts · daily budget · late-night nudge · drink-water reminder",
   "拖动吸附四角 · 0.7–1.6 倍缩放 · 贴左自动镜像 · 位置重启不丢": "Drag to snap into a corner · 0.7–1.6× scale · mirrors when docked left · position survives restarts",
   "全本地": "Local",
@@ -365,5 +366,16 @@
   "MIT 许可 · 立绘与表情自制": "MIT licence · art made in-house",
   "· 低于告急阈值 ¥": " · below the alert threshold ¥",
   "· 低于 ¥": " · below ¥",
-  "本轮进行中": "this turn"
+  "本轮进行中": "this turn",
+  "与 DSH 对账 · 合计差 {diff} · {days} 天": "Reconcile vs DSH · gap {diff} · {days} days",
+  "偏差最大 {a} · {b} · {c}": "biggest gap {a} · {b} · {c}",
+  "没找到 DSH 成本账": "DSH cost ledger not found",
+  "对账读取中…": "reconciling…",
+  "剑仙 ¥": "Jianxian ¥",
+  "本月已用 {v} · {n} 轮": "This month {v} · {n} turns",
+  "按会话": "By session",
+  "未归属": "unattributed",
+  "交流群二维码": "Community group QR code",
+  "QQ 扫一扫，加插件交流群": "Scan on QQ to join the plugin group",
+  "群号 1136802758": "Group 1136802758"
 }

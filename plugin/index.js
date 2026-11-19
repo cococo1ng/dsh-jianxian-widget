@@ -335,11 +335,28 @@ const PRICE_TABLE = {
   'deepseek-v4-pro': { hit: [0.15, 0.3], miss: [4.5, 9.0], out: [13.5, 27.0] },
 }
 
-// 旧模型名 → 现模型名：官方改名后旧名仍可调用，且按现模型计费
+// 旧模型名 / 别名 / 第三方入口上的同模型 → 现模型名，按现模型计价
+// 2026-11-19 补：workbuddy 等入口把 flash 报成 deepseek-v4.1-flash，
+// 之前整批落进「未计价」，账本漏记——而它跟官方 flash 是同价模型
+// （DSH 成本账 11-08 那条：6.33 USD 按 0.15/0.6/0.003 谷价算回去正好 6.34）。
 const MODEL_ALIASES = {
   'deepseek-v4-flash': 'deepseek-flash',
   'deepseek-v4-flash-vision-exp': 'deepseek-flash',
+  'deepseek-v4.1-flash': 'deepseek-flash',
+  'deepseek-v41-flash': 'deepseek-flash',
 }
+
+// 免费额度模型（hy4free / hy4flash-free / jev-1.13-free…）：确定不收钱，跟「不知道多少钱」分开。
+// 以前两者都记成 unpriced，一个数字里混着「免费的」和「漏价的」，看不出账到底漏没漏。
+const FREE_MODEL_RE = /(?:^|[-/_:])free$|-free-|free$/
+function isFreeModel(id) {
+  return FREE_MODEL_RE.test(String(id || ''))
+}
+const FREE_PRICE = { hit: [0, 0], miss: [0, 0], out: [0, 0], free: true }
+
+// 网关常把入口塞进模型名（deepseek/deepseek-v4-flash-vision-exp、xxx/flash-1017）：
+// 先去掉路由前缀，再去掉快照后缀（-1017 / -0813 / -2024-07-18，4 位或 8 位日期），最后查别名。
+const SNAPSHOT_SUFFIX = /-(?:\d{4}|\d{4}-\d{2}-\d{2})$/
 
 // DeepSeek 官方路由的 provider id。只用来在账本里标注「这笔走的是官方账号」，
 // **不再当计价闸门**（2026-11-14 改）：第三方网关（Workbuddy、modlens、lobsterai…）上
@@ -349,14 +366,22 @@ const MODEL_ALIASES = {
 const OFFICIAL_PROVIDERS = ['deepseek-official', 'deepseek-account']
 
 function canonicalModel(model) {
-  const id = String(model || '').trim().toLowerCase()
+  let id = String(model || '').trim().toLowerCase()
+  if (!id) return ''
+  const slash = id.lastIndexOf('/')
+  if (slash >= 0 && slash + 1 < id.length) id = id.slice(slash + 1)
+  if (SNAPSHOT_SUFFIX.test(id)) id = id.replace(SNAPSHOT_SUFFIX, '')
   return MODEL_ALIASES[id] || id
 }
 
 // 返回 null = 价表里没有这个模型（不猜价，账本里标「未计价」）。
 // provider 参数留着只为调用点兼容与标注，不参与是否计价的判断。
 export function priceFor(model) {
-  return PRICE_TABLE[canonicalModel(model)] || null
+  const id = canonicalModel(model)
+  if (PRICE_TABLE[id]) return PRICE_TABLE[id]
+  // 免费额度：确定 0 价 —— 记 token、记 ¥0，但不进「未计价」（那个数字留给"不知道多少钱"）
+  if (isFreeModel(id)) return FREE_PRICE
+  return null
 }
 
 // provider → 界面上的小尾巴：官方路由不标，第三方路由标出来（"模型 @路由"）
@@ -437,6 +462,23 @@ export function apply(ctx) {
 
   // —— 每轮消耗：按 (session, turn) 聚合 assistant/message 上的真实 usage ——
   const turnAggs = new Map() // sessionId -> { turn, tokens, cost, model, startedAt }
+  // 会话 id → 会话标题（账本「按会话」分账要显示人名，不是一串 uuid）。
+  // 上限 200 条：DSH 一天能开几十个窗口，不清会一直涨。
+  const sessionTitles = new Map()
+  function noteSessionTitle(sid, title) {
+    try {
+      const k = String(sid || '')
+      const t = String(title || '').trim().slice(0, 60)
+      if (!k || !t) return
+      if (sessionTitles.has(k)) sessionTitles.delete(k)
+      sessionTitles.set(k, t)
+      while (sessionTitles.size > 200) {
+        const oldest = sessionTitles.keys().next()
+        if (oldest.done) break
+        sessionTitles.delete(oldest.value)
+      }
+    } catch (err) { /* 记标题失败不影响记账 */ }
+  }
   let lastTurn = { seq: 0, turn: null, amount: null, tokens: null, model: null, ts: null }
   const bestKey = 'xjj:lastTurnSeq'
 
@@ -455,6 +497,7 @@ export function apply(ctx) {
       turn: Number.isFinite(Number(last.turn)) ? Number(last.turn) : null,
       amount: Number.isFinite(amount) ? amount : null,
       unpriced: Number(last.unpriced) || 0,
+      free: Number(last.free) || 0,
       tokens: Number.isFinite(Number(last.tokens)) ? Number(last.tokens) : null,
       model: last.model || null,
       ts,
@@ -478,12 +521,14 @@ export function apply(ctx) {
     turnAggs.delete(sessionId)
     if (!agg.tokens && !agg.cost) return
     const unpriced = Number(agg.unpriced) || 0
+    const free = Number(agg.free) || 0
     lastTurn = {
       seq: lastTurn.seq + 1,
       turn: agg.turn,
       // 未计价的轮次给 null，界面上显示"未计价"而不是 ¥0.00（0 容易被当成"这轮免费"）
       amount: agg.cost > 0 ? agg.cost : (unpriced ? null : 0),
       unpriced: unpriced,
+      free: free,
       tokens: agg.tokens,
       model: agg.model || null,
       ts: Date.now(),
@@ -503,6 +548,10 @@ export function apply(ctx) {
       turns: Number(mrow.turns || 0) + 1,
       tokens: Number(mrow.tokens || 0) + Number(agg.tokens || 0),
     }
+    // 会话维度：账本里存 sid + 当时的会话名，「按会话」分账才不用去查会话表。
+    // 历史明细没有这两列（4.29.0 之前），按「未归属」如实显示，不猜。
+    const sidOf = String(agg.sid || sessionId || '')
+    const nameOf = sessionTitles.get(sidOf) || ''
     led.turns.push({
       ts: lastTurn.ts,
       turn: agg.turn,
@@ -511,6 +560,9 @@ export function apply(ctx) {
       model: agg.model || null,
       ...(agg.provider ? { provider: agg.provider } : {}),
       ...(unpriced ? { unpriced: unpriced } : {}),
+      ...(free ? { free: free } : {}),
+      ...(sidOf ? { sid: sidOf } : {}),
+      ...(nameOf ? { name: nameOf } : {}),
     })
     // 明细保留：只留 90 天、最多 MAX_TURNS 条；被挤出去的进归档（自己留一份，别直接丢）
     const cutoff = Date.now() - TURN_KEEP_DAYS * 86400000
@@ -589,6 +641,7 @@ export function apply(ctx) {
       if (type === 'session/title') {
         const t = String(d.title === undefined ? '' : d.title).trim()
         if (t) waitState.sessionName = t.slice(0, 80)
+        noteSessionTitle(sid, t)
         return
       }
       if (type === 'turn/start' || type === 'turn/end') { waitState.pending = null; return }
@@ -637,12 +690,12 @@ export function apply(ctx) {
       let agg = turnAggs.get(sid)
       if (isMsg && (!agg || agg.turn !== turn)) {
         if (agg) finalizeTurn(sid)
-        agg = { turn, tokens: 0, cost: 0, model: '', provider: '', startedAt: Date.now() }
+        agg = { turn, sid, tokens: 0, cost: 0, model: '', provider: '', startedAt: Date.now() }
         turnAggs.set(sid, agg)
       } else if (!agg) {
         // 轮首压缩：摘要先于这一轮的任何 assistant/message 到达，此时没有正在进行的轮次。
         // 单开一个槽先把钱记上，等这一轮的消息来了再各自结算（金额不会丢）。
-        agg = { turn: null, tokens: 0, cost: 0, model: '', provider: '', startedAt: Date.now() }
+        agg = { turn: null, sid, tokens: 0, cost: 0, model: '', provider: '', startedAt: Date.now() }
         turnAggs.set(sid, agg)
       }
       const input = Number(usage.inputTokens) || 0
@@ -661,6 +714,8 @@ export function apply(ctx) {
       if (provider) agg.provider = provider
       // 价表里没有的模型：只记 token，不猜钱。账本里这一轮标成"未计价"
       if (!price) { agg.unpriced = (agg.unpriced || 0) + 1; return }
+      // 免费额度：钱是 0，但要留个记号，明细里才不会看起来像"记漏了"
+      if (price.free) agg.free = (agg.free || 0) + 1
       // 缓存写入按「未命中输入」价计（DeepSeek 口径）；命中单独按 hit 价
       const cost = (cached / 1e6) * price.hit[off]
         + ((input + cacheWrite) / 1e6) * price.miss[off]
@@ -886,8 +941,36 @@ export function apply(ctx) {
     return out
   }
 
-  function usageView(range, q, limit) {
-    const led = readLedger()
+  // —— 按会话：只统计还在账本里的逐轮明细（90 天 / 500 条以内）。
+  //    跨天结转进 daily 之后那部分没有会话信息，如实只算留下的；
+  //    4.29.0 之前的明细没有 sid，归「未归属」——不猜是哪次对话花的。
+  function bySessionOf(led, set) {
+    const sess = new Map()
+    for (const t of (led.turns || [])) {
+      if (!t || !set.has(dayOfTs(t.ts))) continue
+      const sid = String(t.sid || '')
+      const key = sid || '~unknown'
+      const cur = sess.get(key) || { sid, name: '', amount: 0, turns: 0, tokens: 0, lastAt: 0 }
+      cur.amount = addMoney(cur.amount, Number(t.amount) || 0)
+      cur.turns += 1
+      cur.tokens += Number(t.tokens) || 0
+      if (t.name) cur.name = String(t.name).slice(0, 60)
+      cur.lastAt = Math.max(cur.lastAt, Number(t.ts) || 0)
+      sess.set(key, cur)
+    }
+    return Array.from(sess.values())
+      .map((x) => ({
+        sid: x.sid ? x.sid.slice(0, 12) : '',
+        name: x.name || (x.sid ? '会话 ' + x.sid.slice(0, 6) : '未归属'),
+        amount: x.amount,
+        turns: x.turns,
+        tokens: x.tokens,
+        lastAt: x.lastAt,
+      }))
+      .sort((a, b) => b.amount - a.amount || b.lastAt - a.lastAt)
+  }
+
+  function usageView(range, q, limit) {    const led = readLedger()
     const daily = led.daily || {}
     const today = led.date
     const fromTurns = turnsByDay(led)
@@ -985,11 +1068,45 @@ export function apply(ctx) {
         tokens: Number(t.tokens) || 0,
         model: String(t.model || ''),
         turn: Number(t.turn) || 0,
+        unpriced: Number(t.unpriced) || 0,
+        free: Number(t.free) || 0,
+        name: String(t.name || ''),
       }))
       .sort((a, b) => b.ts - a.ts)
     if (q) {
       items = items.filter((t) => (t.model + ' ' + t.date + ' ' + t.time + ' ' + t.amount.toFixed(2)).toLowerCase().indexOf(q) >= 0)
     }
+
+    // 近 6 个月（含本月）：daily 逐日 + 今天；缺月补 0，月份连续不跳
+    // （和「近 7 天」同一个道理：没有记账的月份显示 0，不要把更早的月份拉进来顶位）
+    const months = (() => {
+      const agg = new Map()
+      const put = (key, used, tk, tok) => {
+        const cur = agg.get(key) || { month: key, used: 0, turns: 0, tokens: 0 }
+        cur.used = addMoney(cur.used, Number(used) || 0)
+        cur.turns += Number(tk) || 0
+        cur.tokens += Number(tok) || 0
+        agg.set(key, cur)
+      }
+      for (const d of Object.keys(daily)) {
+        if (d === today) continue
+        put(String(d).slice(0, 7), daily[d].used, daily[d].turns, daily[d].tokens)
+      }
+      for (const [d, row] of fromTurns) {
+        if (d === today || daily[d]) continue
+        put(String(d).slice(0, 7), row.used, row.turns, row.tokens)
+      }
+      put(String(today).slice(0, 7), led.todayUsed, led.todayTurns, led.todayTokens)
+      const base = new Date(today + 'T00:00:00Z')
+      const out = []
+      for (let i = 5; i >= 0; i -= 1) {
+        const dt = new Date(Date.UTC(base.getUTCFullYear(), base.getUTCMonth() - i, 1))
+        const key = dt.toISOString().slice(0, 7)
+        out.push(agg.get(key) || { month: key, used: 0, turns: 0, tokens: 0 })
+      }
+      return out
+    })()
+    const thisMonth = months[months.length - 1] || { used: 0, turns: 0 }
 
     return {
       ok: true,
@@ -997,6 +1114,10 @@ export function apply(ctx) {
       q,
       totals: { amount, turns, tokens },
       byModel: Array.from(byModel.values()).sort((a, b) => b.amount - a.amount),
+      bySession: bySessionOf(led, set),
+      months,
+      monthUsed: Number(thisMonth.used) || 0,
+      monthTurns: Number(thisMonth.turns) || 0,
       days: dates.map((d) => {
         const row = dayRow(d)
         return { date: d, used: Number(row.used) || 0, turns: Number(row.turns) || 0 }
@@ -1072,7 +1193,7 @@ export function apply(ctx) {
       todayUnpriced: Number(led.todayUnpriced || 0),
       history,
       lastTurn: lastTurn && lastTurn.ts
-        ? { amount: lastTurn.amount, unpriced: Number(lastTurn.unpriced) || 0, tokens: lastTurn.tokens, model: lastTurn.model, ts: lastTurn.ts }
+        ? { amount: lastTurn.amount, unpriced: Number(lastTurn.unpriced) || 0, free: Number(lastTurn.free) || 0, tokens: lastTurn.tokens, model: lastTurn.model, ts: lastTurn.ts }
         : null,
       todayStart: led.startBalance,
       day: led.date,
@@ -1087,6 +1208,58 @@ export function apply(ctx) {
     }
     cache = { at: now, payload }
     return withLive(payload)
+  }
+
+  // —— 对账：跟 DSH 自己的成本计量账比（2026-11-19 加）——
+  // 为什么要有：账本准不准，以前只能靠人肉去翻 storages/cost-meter/ledger.json，
+  // 差多少、差在哪天全靠眼力（4.28.0 那次就是这样才发现的）。
+  // 那个账的 cost 是**美元**，面板展示时才乘 exchangeRate 折人民币；这里换完再比。
+  // 只读、缺文件或格式变了就返回 ok:false，绝不让面板变红。
+  function readCostMeter() {
+    const file = process.env.XJJ_COST_METER || path.join(DSH_HOME, 'storages', 'cost-meter', 'ledger.json')
+    const raw = readJson(file, null)
+    if (!raw || !raw.days || typeof raw.days !== 'object') return null
+    const rate = Number(raw.config && raw.config.exchangeRate) || 7.2
+    const days = []
+    for (const d of Object.keys(raw.days).sort()) {
+      const usd = Number(raw.days[d] && raw.days[d].cost)
+      if (!Number.isFinite(usd)) continue
+      days.push({ date: d, usd: Math.round(usd * 1e6) / 1e6, cny: Math.round(usd * rate * 1e4) / 1e4 })
+    }
+    return { file, rate, days }
+  }
+
+  function reconcileView() {
+    const cm = readCostMeter()
+    if (!cm) return { ok: false, reason: 'no-ledger', at: new Date().toISOString() }
+    const led = readLedger()
+    const mine = {}
+    for (const d of Object.keys(led.daily || {})) mine[d] = Number(led.daily[d] && led.daily[d].used) || 0
+    mine[led.date] = Number(led.todayUsed) || 0
+    const rows = []
+    let dshSum = 0
+    let mySum = 0
+    // 注意：addMoney 是「两数相加」的助手，做差不能套它（NaN 会被 JSON 写成 null）
+    const round8 = (v) => Math.round(v * 1e8) / 1e8
+    for (const d of cm.days) {
+      // 剑仙没记这一天：不掺进合计（否则差额会假大），只在 missing 里报个日期
+      if (!Object.prototype.hasOwnProperty.call(mine, d.date)) continue
+      const my = mine[d.date]
+      dshSum = addMoney(dshSum, d.cny)
+      mySum = addMoney(mySum, my)
+      rows.push({ date: d.date, dsh: d.cny, jianxian: my, diff: round8(my - d.cny) })
+    }
+    const worst = rows.slice().sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff)).slice(0, 3)
+    const missing = cm.days.map((d) => d.date).filter((d) => !Object.prototype.hasOwnProperty.call(mine, d))
+    return {
+      ok: true,
+      rate: cm.rate,
+      days: rows,
+      worst,
+      missing,
+      totals: { dsh: dshSum, jianxian: mySum, diff: round8(mySum - dshSum) },
+      at: new Date().toISOString(),
+    }
   }
 
   function sendJson(res, body, status) {
@@ -1250,6 +1423,19 @@ export function apply(ctx) {
     },
   }))
 
+  // 对账：逐日「剑仙记的」vs「DSH 记的（折人民币）」，外加差额最大的 3 天
+  ctx.effect(() => ctx.webServer.register({
+    kind: 'exact',
+    path: '/xjj/reconcile.json',
+    handler: (req, res) => {
+      try {
+        sendJson(res, reconcileView())
+      } catch (err) {
+        sendJson(res, { ok: false, reason: 'error', error: String((err && err.message) || err).slice(0, 200) })
+      }
+    },
+  }))
+
   // 关于 / 自检：版本、真实目录、产物与数据文件的时间大小、账本快照、构建是否新鲜
   // （只读、不联网、不碰账本写入；前端点开才请求）
   ctx.effect(() => ctx.webServer.register({
@@ -1282,7 +1468,7 @@ export function apply(ctx) {
           holiday: { through: HOLIDAY_TABLE_THROUGH_YEAR, ok: hasHolidayCoverage() },
           wait: { pending: waitState.pending, sessionName: waitState.sessionName || '' },
           adminHosts: ADMIN_HOSTS.length,
-          routes: ['/xjj/state.json', '/xjj/turn.json', '/xjj/config.json', '/xjj/ping.json', '/xjj/wait.json', '/xjj/usage.json', '/xjj/about.json', '/xjj/audit.json'],
+          routes: ['/xjj/state.json', '/xjj/turn.json', '/xjj/config.json', '/xjj/ping.json', '/xjj/wait.json', '/xjj/usage.json', '/xjj/reconcile.json', '/xjj/about.json', '/xjj/audit.json'],
           now: new Date().toISOString(),
         })
       } catch (err) {

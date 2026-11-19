@@ -69,7 +69,8 @@ Host-side changes need a client restart; frontend-only changes just need `Ctrl+F
 - Bubble system: click sequence, variants, weighted random, per-line styles, **visual editor**.
 - Click him 5 times within 3 seconds → he flies a lap around the screen (~6 s).
 - Accounting (DSH only): balance with four colour bands, today's spend, average per turn,
-  7-day bar chart, searchable ledger.
+  7-day bar chart, searchable ledger, **per-session breakdown**, **this month**, and a
+  **day-by-day reconcile against the DSH cost ledger**.
 - Peak/off-peak: the `peak` bubble module shows the current state — green off-peak, orange at peak —
   with a live countdown to the next switch (weekdays 9–12 and 14–18 are peak; weekends and statutory
   holidays are off-peak all day).
@@ -166,12 +167,29 @@ verify/               browser smoke harness
 - No drag sorting in the editor; random-module weights are forced to 1.
 - `sword` / `wipe` key names are swapped relative to the artwork (display names are corrected).
 - Userscript: no balance/ledger (`—`), and strict CSP sites may block the inline `<style>`.
-- Only models present in the price table (`deepseek-flash`, `deepseek-v4-pro`, plus old-name aliases)
+- Only models present in the price table (`deepseek-flash`, `deepseek-v4-pro`, plus old-name and
+  entry-point aliases such as `deepseek-v4.1-flash`)
   are priced, and **the entry point does not change the price**: the same model name served through a
   third-party gateway is still priced, with the route appended as ` @route` in the per-model breakdown.
   Models absent from the table record tokens but no money, and the bubble says "未计价" —
   deliberate: a missing number beats a wrong number. v4.28.0 dropped the route from the pricing gate so
   the ledger reconciles with the DSH "total spent".
+- **Model names are normalised before pricing** (v4.29.0): entry prefixes (`deepseek/xxx`), snapshot
+  suffixes (`-1017`) and entry-point names (`deepseek-v4.1-flash`) all resolve to the same price table,
+  so the same model never falls into "unpriced" just because it was renamed. **Free-tier models**
+  (`hy4free`, `hy4flash-free`) are recorded as free and kept out of the "unpriced" count — that number
+  is reserved for models whose price is genuinely unknown.
+- **The ledger page ends with "Reconcile vs DSH"** (v4.29.0): it reads DSH's own cost ledger
+  (`$DSH_HOME/storages/cost-meter/ledger.json`; its `cost` is **USD**, converted with `exchangeRate`),
+  reports the per-day "Jianxian − DSH" gap and lists the three worst days. The two price tables differ
+  by design (official list price vs each gateway's contract price), so **read the jumps, not the
+  absolute gap**. If that ledger is missing the line says "DSH cost ledger not found" and nothing else
+  is affected.
+- **Per-session breakdown and this month** (v4.30.0): the ledger page shows "This month …" and the top six
+  sessions by amount (hover for tokens). Turn records from this version carry the session id and title;
+  **records written before 4.29.0 have no session information and are grouped as "unattributed"** — no
+  guessing which conversation spent it. Turns already rolled into `daily` have no session either, so
+  "By session" only covers the 90 days / 500 records still kept in the ledger.
 - The public-holiday table covers 2026 only. Until the State Council publishes 2027, holidays are
   treated as workdays; the host warns once a day and the self-check panel shows a hint.
 

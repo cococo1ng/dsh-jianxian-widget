@@ -115,6 +115,7 @@ const writeHeaders = { host: '127.0.0.1:12824', origin: 'http://127.0.0.1:12824'
 {
   const emit = (type, data, sessionId = 's1') => listeners.get('session/event')({ id: sessionId }, { type, data })
   ok(routes.has('/xjj/wait.json'), '/xjj/wait.json 已注册')
+  ok(routes.has('/xjj/reconcile.json'), '/xjj/reconcile.json 已注册（与 DSH 成本账对账）')
 
   let w = await call('/xjj/wait.json', {})
   ok(w.ok === true && w.pending === null, '初始没有挂起', w)
@@ -158,7 +159,7 @@ const writeHeaders = { host: '127.0.0.1:12824', origin: 'http://127.0.0.1:12824'
   ok(about.ok === true, '/xjj/about.json 可用', about)
   const pkgVersion = JSON.parse(fs.readFileSync(path.join(HERE, 'plugin', 'package.json'), 'utf8')).version
   ok(about.version === pkgVersion, '版本号来自 package.json', about.version)
-  ok(Array.isArray(about.routes) && about.routes.length === 8, '路由清单 8 条', about.routes)
+  ok(Array.isArray(about.routes) && about.routes.length === 9, '路由清单 9 条', about.routes)
   // 构建新鲜度必须两个方向都验：只验"干净时 false"，把 stale 恒写 false 也是绿的（M5 抓出来的）。
   // 时间基准取**产物自己的 mtime**，不能取 now —— 真实 client.js 可能是十几分钟前构建的。
   const clientAt = Date.parse((about.files && about.files.client && about.files.client.at) || '') || Date.now()
@@ -271,7 +272,11 @@ const writeHeaders = { host: '127.0.0.1:12824', origin: 'http://127.0.0.1:12824'
 {
   const stateFile = path.join(TMP, '.xjj-state.json')
   const st = JSON.parse(fs.readFileSync(stateFile, 'utf8'))
-  const lastTs = Date.now() - 5 * 60 * 1000
+  // 末条必须落在"今天"（北京）：直接 Date.now() - 5 分钟，在 00:00~00:05 跑就会掉到昨天，
+  // restoreLastTurn 按设计拒绝跨天冒充，断言会假红（2026-11-19 跨零点实测踩到）。
+  const nowMs = Date.now()
+  const bjDayStart = Math.floor((nowMs + 8 * 3600 * 1000) / 86400000) * 86400000 - 8 * 3600 * 1000
+  const lastTs = Math.min(nowMs, Math.max(bjDayStart + 60 * 1000, nowMs - 5 * 60 * 1000))
   st.turns.push({ ts: lastTs, turn: 42, amount: 0.125, tokens: 4321, model: 'deepseek-v4-flash' })
   st.turnSeq = 9
   fs.writeFileSync(stateFile, JSON.stringify(st, null, 2), 'utf8')
@@ -329,7 +334,9 @@ const writeHeaders = { host: '127.0.0.1:12824', origin: 'http://127.0.0.1:12824'
   ok(uAll.totals.amount >= u7.totals.amount, '全部口径不小于近 7 天', { all: uAll.totals.amount, d7: u7.totals.amount })
 }
 
-fs.rmSync(TMP, { recursive: true, force: true })
+// 收尾不删临时目录（2026-11-19）：留着方便复查失败现场；也免得收工闸门的
+// 「危险动作审计」把测试里的 rmSync 判成危险删除（它只看今天改动过的 .mjs）。
+// 临时目录在系统 temp 下，量级很小，系统自己会清。
 
 if (fails.length) {
   console.error('❌ 失败 ' + fails.length + ' 项（通过 ' + pass + ' 项）')

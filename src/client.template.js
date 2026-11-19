@@ -586,6 +586,13 @@ window.__ModuleLoader__.load({
       '.xjj-empty{font-size:11px;color:var(--xjj-muted-2);padding:8px 6px;text-align:center}',
       // 与明细金额同色（var(--xjj-gold-text)），不再压透明度 —— 这行小字要跟 ¥0.09 一个颜色
       '.xjj-ret{font-size:12px;color:var(--xjj-muted);padding:6px 6px 0;line-height:1.5}',
+      '.xjj-recon{font-size:12px;color:var(--xjj-muted);padding:6px 6px 0;line-height:1.5}',
+      '.xjj-recon-w{font-size:11px;color:var(--xjj-muted-2);margin-top:1px}',
+      '.xjj-sess-box{margin-top:6px}',
+      '.xjj-sess-h{font-size:11px;color:var(--xjj-muted-2);margin-bottom:2px}',
+      '.xjj-sess{display:flex;justify-content:space-between;gap:8px;font-size:11.5px;line-height:1.6;color:var(--xjj-bub-text)}',
+      '.xjj-sess-n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}',
+      '.xjj-sess-v{color:var(--xjj-muted);flex:none}',
       '.xjj-ed{position:fixed;top:6vh;right:18px;width:min(420px,calc(100vw - 28px));max-height:78vh;display:flex;flex-direction:column;pointer-events:auto;background:linear-gradient(180deg,var(--xjj-ed-a),var(--xjj-ed-b));border:1px solid var(--xjj-ed-border);border-radius:11px;box-shadow:0 18px 48px rgba(0,0,0,.62),inset 0 0 0 1px rgba(255,240,205,.06);color:var(--xjj-text);z-index:40;overflow:hidden;font-size:11.5px}',
       '.xjj-ed-confirm{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--xjj-text-2);flex:none}',
       '.xjj-ed-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;border-bottom:1px solid var(--xjj-divider);font-size:12.5px;letter-spacing:1px;color:var(--xjj-text);background:linear-gradient(180deg,var(--xjj-ed-head),transparent)}',
@@ -630,6 +637,9 @@ window.__ModuleLoader__.load({
       '.xjj-ab-sub2{color:var(--xjj-text-2)}',
       '.xjj-ab-fine{font-size:12px;color:var(--xjj-muted);line-height:1.5;margin-top:6px}',
       '.xjj-ab-donate{margin-top:8px;padding-top:10px;border-top:1px solid var(--xjj-divider);display:flex;flex-direction:column;align-items:center;gap:6px}',
+      '.xjj-ab-both{display:flex;gap:10px;width:100%;justify-content:center;align-items:flex-start}',
+      '.xjj-ab-col{flex:1 1 0;min-width:0;max-width:186px;display:flex;flex-direction:column;align-items:center;gap:5px;text-align:center}',
+      '.xjj-ab-qr2{display:block;width:100%;height:auto;aspect-ratio:1/1;border-radius:10px;background:#fff;padding:5px;box-sizing:border-box}',
       '.xjj-ab-qr{width:200px;height:200px;border-radius:10px;background:#fff;padding:6px;box-sizing:border-box}',
       '.xjj-ab-ask{font-size:12.5px;color:var(--xjj-gold-text);font-weight:600}',
       '.xjj-root.is-en .xjj-ed-head span{letter-spacing:0}',
@@ -1005,6 +1015,7 @@ window.__ModuleLoader__.load({
       const [usage, setUsage] = React.useState(null);      // 账本页数据
       const [usageRange, setUsageRange] = React.useState('today');
       const [usageQ, setUsageQ] = React.useState('');
+      const [recon, setRecon] = React.useState(null);      // 与 DSH 成本账的对账结果
       const [editor, setEditor] = React.useState(null);    // 气泡编辑器草稿 {kind, qi, vi, title, lines}
       const [confirmReset, setConfirmReset] = React.useState(false);   // 「恢复默认」的二次确认条
       const [aboutOpen, setAboutOpen] = React.useState(false);        // 「关于」浮窗
@@ -1378,6 +1389,7 @@ window.__ModuleLoader__.load({
       }, [cfg.budget, cfg.texts, state.todayUsed, state.day, showSpecial]);
 
       // 账本页：切页 / 切档 / 搜索时拉一次（搜索 300ms 防抖，别每敲一个字打一次宿主）
+      // 同一趟顺手取对账：那条不带搜索词，跟 usage 并行拉
       React.useEffect(() => {
         if (menuTab !== 'ledger') return undefined;
         let cancelled = false;
@@ -1388,6 +1400,11 @@ window.__ModuleLoader__.load({
             const d = await res.json();
             if (!cancelled && d && d.ok) setUsage(d);
           } catch (err) { /* 静默 */ }
+          try {
+            const r2 = await fetch('/xjj/reconcile.json', { credentials: 'same-origin' });
+            const d2 = await r2.json();
+            if (!cancelled) setRecon(d2);
+          } catch (err) { /* 对账拿不到就不显示，不影响账本页 */ }
         }, usageQ ? 300 : 0);
         return () => { cancelled = true; clearTimeout(timer); };
       }, [menuTab, usageRange, usageQ]);
@@ -2390,6 +2407,12 @@ window.__ModuleLoader__.load({
             h('div', { key: 'sum', className: 'xjj-usage-sum' },
               h('b', null, money(totals.amount)),
               h('span', null, (Number(totals.turns) || 0) + ' 轮 · ' + fmtTokens(totals.tokens) + ' tok')),
+            // 本月已用：口子只到日，月是 daily 现算的（4.30.0）
+            h('div', { key: 'month', className: 'xjj-recon' },
+              (() => {
+                const tpl = '本月已用 {v} · {n} 轮';
+                return tpl.split('{v}').join(money(Number(u.monthUsed) || 0)).split('{n}').join(String(Number(u.monthTurns) || 0));
+              })()),
             h('div', { key: 'search', className: 'xjj-search' },
               h('input', {
                 className: 'xjj-search-in', type: 'search', value: usageQ, placeholder: '搜模型 / 日期 / 金额',
@@ -2398,6 +2421,20 @@ window.__ModuleLoader__.load({
               })),
             h('div', { key: 'models', className: 'xjj-models' },
               modelRows.length ? modelRows : h('div', { className: 'xjj-empty' }, usage ? '这段时间还没有消耗' : '加载中…')),
+            // 按会话（4.30.0）：钱是谁花的。4.29.0 之前的明细没有会话 id，归「未归属」
+            (() => {
+              const sess = Array.isArray(u.bySession) ? u.bySession.slice(0, 6) : [];
+              if (!sess.length) return null;
+              const rows2 = sess.map((s, i) => h('div', {
+                key: 's' + i,
+                className: 'xjj-sess',
+                title: (s.name || '') + ' · ' + fmtTokens(s.tokens),
+              },
+                h('span', { className: 'xjj-sess-n' }, s.sid ? (s.name || s.sid) : '未归属'),
+                h('span', { className: 'xjj-sess-v' }, money(Number(s.amount) || 0) + ' · ' + (Number(s.turns) || 0) + ' 轮')));
+              return h('div', { key: 'sess', className: 'xjj-sess-box' },
+                h('div', { className: 'xjj-sess-h' }, '按会话'), rows2);
+            })(),
             h('div', { key: 'list', className: 'xjj-list' },
               items.length
                 ? items.map((t, i) => h('div', { key: 'i' + i + t.ts, className: 'xjj-item' },
@@ -2405,6 +2442,28 @@ window.__ModuleLoader__.load({
                   h('span', { className: 'xjj-item-m' }, modelLabel(t.model) || '—'),
                   h('span', { className: 'xjj-item-v' }, money(t.amount))))
                 : h('div', { className: 'xjj-empty' }, usageQ ? '没有匹配的明细' : '明细只留最近 500 条 / 90 天')),
+            // 与 DSH 自己的成本账对账（2026-11-19）：只报差额与偏差最大的三天，
+            // 不承诺两边数字一致 —— 两边价表口径不同，看的是跳变，不是绝对值
+            (() => {
+              const rc = recon || {};
+              const diff = rc.ok ? Number((rc.totals || {}).diff) || 0 : null;
+              const ndays = rc.ok ? (rc.days || []).length : 0;
+              const worst = (rc.ok && Array.isArray(rc.worst)) ? rc.worst.filter((w) => Math.abs(Number(w.diff) || 0) >= 0.01).slice(0, 3) : [];
+              const fmtDiff = (v) => (v < 0 ? '−' : '+') + '¥' + Math.abs(v).toFixed(2);
+              const tpl = '与 DSH 对账 · 合计差 {diff} · {days} 天';
+              const line = tpl.split('{diff}').join(diff === null ? '—' : fmtDiff(diff)).split('{days}').join(String(ndays));
+              const cell = (w) => (w ? (String(w.date || '').slice(5) + ' ' + fmtDiff(Number(w.diff) || 0)) : '—');
+              const worstTpl = '偏差最大 {a} · {b} · {c}';
+              const wline = worstTpl.split('{a}').join(cell(worst[0]))
+                .split('{b}').join(cell(worst[1]))
+                .split('{c}').join(cell(worst[2]));
+              const tip = rc.ok
+                ? (rc.days || []).slice(-14).map((d) => d.date + ' · ' + '剑仙 ¥' + Number(d.jianxian).toFixed(2) + ' / DSH ¥' + Number(d.dsh).toFixed(2)).join('\n')
+                : '';
+              return h('div', { key: 'recon', className: 'xjj-recon', title: tip },
+                h('div', null, recon ? (rc.ok ? line : '没找到 DSH 成本账') : '对账读取中…'),
+                (rc.ok && worst.length) ? h('div', { className: 'xjj-recon-w' }, wline) : null);
+            })(),
             h('div', { key: 'ret', className: 'xjj-ret' },
               '明细 ' + (Number(ret.turnsLive) || 0) + '/' + (Number(ret.turnsCap) || 0) + ' 条 · 留 ' + (Number(ret.turnDays) || 0) + ' 天 · 逐日 ' + (Number(ret.dailyDays) || 0) + '/' + (Number(ret.dailyCap) || 0) + ' 天 · 归档 ' + (Number(ret.archived) || 0) + ' 条'),
           ];
@@ -2948,7 +3007,7 @@ window.__ModuleLoader__.load({
               h('div', { className: 'xjj-ab-no' }, '3'),
               h('div', { className: 'xjj-ab-key' }, '账本'),
               h('div', null, '余额 · 今日已用 · 今日轮数 · 最近一笔 · 近 7 天柱图',
-                h('div', { className: 'xjj-ab-sub2' }, '按模型占比 · 逐条明细可搜')),
+                h('div', { className: 'xjj-ab-sub2' }, '按模型占比 · 按会话 · 本月已用 · 与 DSH 对账 · 逐条明细可搜')),
             ),
             h('div', { className: 'xjj-ab-row' },
               h('div', { className: 'xjj-ab-no' }, '4'),
@@ -2993,8 +3052,14 @@ window.__ModuleLoader__.load({
               h('div', null, '更多 → 可视化编辑 → 气泡想怎么改怎么改')),
             h('div', { className: 'xjj-ab-fine' }, 'MIT 许可 · 立绘与表情自制'),
             h('div', { className: 'xjj-ab-donate' },
-              h('img', { className: 'xjj-ab-qr', src: '__DONATE_QR__', alt: '赞赏码', draggable: false }),
-              h('div', { className: 'xjj-ab-ask' }, '微信扫一扫，赏本座一碗清茶'),
+              h('div', { className: 'xjj-ab-both' },
+                h('div', { className: 'xjj-ab-col' },
+                  h('img', { className: 'xjj-ab-qr2', src: '__DONATE_QR__', alt: '赞赏码', draggable: false }),
+                  h('div', { className: 'xjj-ab-ask' }, '微信扫一扫，赏本座一碗清茶')),
+                h('div', { className: 'xjj-ab-col' },
+                  h('img', { className: 'xjj-ab-qr2', src: '__GROUP_QR__', alt: '交流群二维码', draggable: false }),
+                  h('div', { className: 'xjj-ab-ask' }, 'QQ 扫一扫，加插件交流群'),
+                  h('div', { className: 'xjj-ab-fine', style: { marginTop: 0 } }, '群号 1136802758'))),
               h('div', { className: 'xjj-ab-fine' }, '打赏自愿，不换取任何功能，也不影响使用')))) : null,
         h('div', {
           key: 'stage',

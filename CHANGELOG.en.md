@@ -3,6 +3,73 @@
 User-visible changes. Versions follow [SemVer](https://semver.org/).
 Versions before 4.19.2 are documented in the Chinese [CHANGELOG.md](CHANGELOG.md).
 
+## 4.31.0 · 2026-11-20 · The About panel gains a community-group QR code
+
+- The bottom of the About panel used to show the donation code alone; it is now **two columns side by side**:
+  WeChat donation code on the left, the QQ plugin group code on the right (group 1136802758).
+- The group code was cropped out of the group-card screenshot: the source is 303×430 (avatar, title and a
+  footer line included), so the code body was located by the dense blue dot-matrix region
+  (x 29–276 / y 116–363), padded with a 10px quiet zone on each side, squared up and exported as a
+  480×480 webp (`assets/about/group-qr.webp`, 27 KB), inlined by `build.py`'s `__GROUP_QR__` placeholder —
+  no network request, same as every other asset.
+- Each column takes half the width (capped at 186px) and shrinks on narrow screens without overflowing the
+  420px panel.
+- Chinese and English stay in sync: the group number and both captions are in `src/i18n/en.json`.
+
+## 4.30.0 · 2026-11-20 · The ledger now knows who spent the money: by session, plus this month
+
+- **Gap**: the Sorceress plugin's billing page has "By session" and "This month", while the Jianxian ledger
+  only had today / last 7 days / all time — you could not tell which conversation burned the most, nor see
+  a monthly total.
+- **Root cause**: each turn record stored `ts / turn / amount / tokens / model` and **no session id or
+  session name**, so turns could not be grouped by conversation; months had to be added up by hand.
+- **Changes**:
+  1. turn records now carry `sid` (session id) and `name` (the title from `session/title`; at most 200 kept,
+     oldest evicted);
+  2. `usageView()` returns `bySession` (sorted by amount, with turns / tokens / last seen), `months`
+     (six consecutive months, missing months filled with 0) and `monthUsed` / `monthTurns`;
+  3. the ledger page gained a "This month …" line and the top six sessions (hover for tokens).
+- **How to read it**: turn records written before 4.29.0 have no `sid` and are grouped as "unattributed" —
+  no guessing which conversation they belonged to; the same goes for turns already rolled into `daily`, so
+  "By session" only covers the 90 days / 500 records still in the ledger.
+- Guards: `test-billing` 42 → 50 assertions (session id, session name, per-session amount/turns, six
+  consecutive months, this month includes today); `test-teeth` gained M24 (turns drop the session) and
+  M25 (this month misses today).
+
+## 4.29.0 · 2026-11-19 · The ledger recognises renamed models, and reconciles against the DSH cost ledger
+
+- **Symptom**: 11-08 and 11-09 were recorded as ¥0.00 although 110 and 39 turns really ran; DSH's own
+  cost ledger shows 11.76 and 1.50 (USD) for those two days.
+- **Root cause**: the same model under a different name could not be priced — the workbuddy entry point
+  reports flash as `deepseek-v4.1-flash`, and those 8 turns / 141M tokens were all marked "未计价".
+  Checked against the price list: 0.15 / 0.6 / 0.003 (USD, off-peak) recomputes 11-08 to 6.34 versus
+  DSH's 6.33 — same tier as official flash, the same model under another name.
+- **Three changes**:
+  1. `canonicalModel()` now normalises before pricing: strips the entry prefix (`deepseek/xxx`), strips
+     snapshot suffixes (`-1017` / `-0813` / `-2024-07-18`), then consults the alias table;
+     `deepseek-v4.1-flash` and `deepseek-v41-flash` were added to `MODEL_ALIASES`.
+  2. **Free-tier models are tracked separately**: `hy4free` / `hy4flash-free` return a zero price and are
+     tagged `free`, so they no longer inflate `todayUnpriced` — that number is reserved for models whose
+     price is genuinely unknown, and mixing them hides whether the books are leaking. Detail rows carry
+     `free: 1`, `lastTurn` carries it too, and it survives a restart.
+  3. New `GET /xjj/reconcile.json`: reads DSH's cost ledger
+     (`$DSH_HOME/storages/cost-meter/ledger.json`, where `cost` is USD and is converted with
+     `exchangeRate`), returns the per-day "Jianxian − DSH" gap plus the three worst days; the ledger page
+     ends with one "Reconcile vs DSH" line. When that ledger is absent it shows "DSH cost ledger not
+     found" (`ok:false`, no throw) and nothing else is affected.
+- **Backfill**: `tools/backfill.mjs` gained `--merge` — it only fills days that are missing or stuck at 0,
+  never touching a day that already has a positive figure (a full overwrite would replace well-computed
+  history with whatever the surviving session logs still cover). 11-08 (¥0 → ¥43.76) and 11-09
+  (¥0 → ¥24.07) were restored; the other 32 days were left alone. The book was backed up as
+  `.xjj-state.json.bak-before-recalc-*` before writing.
+- **How to read it**: reconcile looks for **jumps**, not equality — Jianxian prices at official list
+  price while DSH prices at each gateway's contract price, so the two never match to the cent
+  (measured over 25 days: Jianxian ¥624.40 vs DSH ¥697.07; 11-08 short, 11-09 over).
+- Guards: `test-billing` 31 → 42 assertions (3 normalisation, 3 free-tier, 5 reconcile); `test-routes`
+  gained "reconcile is registered" and the route list is now 9; `test-teeth` gained M21 (snapshot suffix
+  not stripped), M22 (free tier counted as unpriced) and M23 (reconcile skips the exchange rate), with
+  the M6 / M8 anchors moved to the new code.
+
 ## 4.28.0 · 2026-11-14 · The ledger now reconciles with the DSH "total spent": third-party routes are no longer kept out of the books
 
 - **Symptom**: the panel's "All time" showed ¥566.30 while DSH showed ¥624.87 — ¥58.57 short.

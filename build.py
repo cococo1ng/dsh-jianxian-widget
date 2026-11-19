@@ -31,6 +31,7 @@ LITERAL = re.compile(r"'[^'\n]*'|\"[^\"\n]*\"|`[^`]*`")
 TOKENS = {
     # 站姿族（新剑设定：剑佩左腰；v6 = 1296×1728 原图重切，统一缩放、脚底对齐）
     "__DONATE_QR__": ("about/donate-qr.webp", "image/webp"),
+    "__GROUP_QR__": ("about/group-qr.webp", "image/webp"),
     "__POSE_DANCE16_01__": ("v10/dance01.webp", "image/webp"),
     "__POSE_DANCE16_02__": ("v10/dance02.webp", "image/webp"),
     "__POSE_DANCE16_03__": ("v10/dance03.webp", "image/webp"),

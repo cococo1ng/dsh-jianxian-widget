@@ -62,9 +62,9 @@ const MUTANTS = [
     id: 'M6 路由清单少一条',
     file: 'plugin/index.js',
     guard: 'test-routes.mjs',
-    find: "'/xjj/wait.json', '/xjj/usage.json', '/xjj/about.json'",
-    replace: "'/xjj/wait.json', '/xjj/about.json'",
-    expect: '路由清单 8 条',
+    find: "'/xjj/usage.json', '/xjj/reconcile.json', '/xjj/about.json'",
+    replace: "'/xjj/usage.json', '/xjj/about.json'",
+    expect: '路由清单 9 条',
   },
   {
     id: 'M7 提问不再挂起',
@@ -75,13 +75,13 @@ const MUTANTS = [
     expect: '提问要挂起并带 callId',
   },
   {
-    // 2026-11-14：口径改成"第三方路由也按官方价记"后，原来的 provider 白名单锚点不存在了，
-    // 这条变异体跟着换到价表闸门本身 —— 它守的是「表外模型不许乱给价」。
+    // 2026-11-19：价表闸门里多了「免费额度 → 零价」这条分支，锚点跟着换到闸门最后一行；
+    // 守的意思没变：**表里没有的模型不许给价**（给了就会凭空造出钱来）。
     id: 'M8 价表闸门失效',
     file: 'plugin/index.js',
     guard: 'test-billing.mjs',
-    find: 'return PRICE_TABLE[canonicalModel(model)] || null',
-    replace: "return PRICE_TABLE[canonicalModel(model)] || PRICE_TABLE['deepseek-flash']",
+    find: '  if (isFreeModel(id)) return FREE_PRICE\n  return null',
+    replace: '  if (isFreeModel(id)) return FREE_PRICE\n  return FREE_PRICE',
     expect: '表里没有的模型不给价',
   },
   {
@@ -161,6 +161,51 @@ const MUTANTS = [
     find: 'for (let i = 6; i >= 0; i -= 1) dates.push(bjNow(nowMs - i * 86400000).day)',
     replace: 'for (let i = 3; i >= 0; i -= 1) dates.push(bjNow(nowMs - i * 86400000).day)',
     expect: '近 7 天必须是连续 7 个日历日',
+  },
+  // M21 ~ M23（2026-11-19）：账本漏账那三条口子，各配一个变异体。
+  // 为什么单列：这三处坏掉时，账本不会报错，只会**静静少算/多算**钱，
+  // 断言绿了也看不出来（11-08 漏了 ¥43.76 就是这么躲过去的）。
+  {
+    id: 'M21 快照后缀不剥',
+    file: 'plugin/index.js',
+    guard: 'test-billing.mjs',
+    find: "if (SNAPSHOT_SUFFIX.test(id)) id = id.replace(SNAPSHOT_SUFFIX, '')",
+    replace: "if (false && SNAPSHOT_SUFFIX.test(id)) id = id.replace(SNAPSHOT_SUFFIX, '')",
+    expect: '快照后缀 -1017 要剥掉',
+  },
+  {
+    id: 'M22 免费额度记成未计价',
+    file: 'plugin/index.js',
+    guard: 'test-billing.mjs',
+    find: 'if (isFreeModel(id)) return FREE_PRICE',
+    replace: 'if (false && isFreeModel(id)) return FREE_PRICE',
+    expect: '免费额度不记进未计价',
+  },
+  {
+    id: 'M23 对账不乘汇率',
+    file: 'plugin/index.js',
+    guard: 'test-billing.mjs',
+    find: 'cny: Math.round(usd * rate * 1e4) / 1e4 })',
+    replace: 'cny: Math.round(usd * 1e4) / 1e4 })',
+    expect: '按汇率折人民币',
+  },
+  // M24 / M25（2026-11-20）：按会话 / 本月的两条口子。
+  // 它们坏掉时界面不会报错，只会少一块或数字偏小 —— 属于"看着对、其实缺"的坏法。
+  {
+    id: 'M24 明细不记会话',
+    file: 'plugin/index.js',
+    guard: 'test-billing.mjs',
+    find: '...(sidOf ? { sid: sidOf } : {}),',
+    replace: '...(false ? { sid: sidOf } : {}),',
+    expect: '明细里带 sid',
+  },
+  {
+    id: 'M25 本月漏算今天',
+    file: 'plugin/index.js',
+    guard: 'test-billing.mjs',
+    find: 'put(String(today).slice(0, 7), led.todayUsed, led.todayTurns, led.todayTokens)',
+    replace: 'put(String(today).slice(0, 7), 0, 0, 0)',
+    expect: '本月已用含今天',
   },
 ]
 
@@ -325,6 +370,7 @@ if (bad) {
   console.error('   副本保留在：' + TMP + ' / ' + GEO)
   process.exit(1)
 }
-fs.rmSync(TMP, { recursive: true, force: true })
-fs.rmSync(GEO, { recursive: true, force: true })
+// 收尾不删副本：guard audit 把「未接 guard 的删除」判红（2026-11-14 收工），
+// 副本留着反而方便复查；要清就按下面打印的路径手工删。
+console.log('   副本保留在：' + TMP + ' / ' + GEO)
 console.log(`\n✅ ${MUTANTS.length} 个变异体 + ${GEO_MUTANTS.length} 个几何变异体全部被抓住，且失败原因都与改动对应`)
