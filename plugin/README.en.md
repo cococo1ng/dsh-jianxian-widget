@@ -15,7 +15,7 @@ One host plugin (8 routes, all on `webServer`) plus one pure front-end widget; *
 
 | Item | Value |
 |---|---|
-| Version | **v4.31.0** |
+| Version | **v4.31.1** |
 | Poses | **23 standing poses** + **24-frame sword dance** |
 | Talismans (menu button skins) | 22 |
 | Sounds | 10, each with its own switch |

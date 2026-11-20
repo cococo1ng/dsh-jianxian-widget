@@ -3,6 +3,27 @@
 User-visible changes. Versions follow [SemVer](https://semver.org/).
 Versions before 4.19.2 are documented in the Chinese [CHANGELOG.md](CHANGELOG.md).
 
+## 4.31.1 · 2026-11-20 · The white robe is no longer a head taller than the ink one
+
+- **Symptom**: switching to the white robe made the figure clearly taller — its head touched the widget's
+  top edge, and the talisman icon and bubble drifted out of place with it.
+- **Cause**: the sprite is `height:100%` inside the 270px root, with the width following each image's own
+  aspect ratio. The ink set was cropped with 41/520 = 7.9% empty space above the figure (content height
+  ratio 0.919), while the white set was cropped tight to the pixels (ratio 1.000). Under one CSS rule the
+  white figure therefore rendered 270px tall against the ink figure's 248.7px: **the white robe was scaled
+  up 8.6%, 21.3px taller**, and two things followed it — the click area (`src/hitboxes.json` is measured
+  from the ink set, so white was 8% narrow) and the talisman/bubble lift (`gearLift()` reads the ink set's
+  8% top margin, while white had none).
+- **Fix**: only the 22 standing white poses got transparent padding above the figure (520 -> 566px; the
+  artwork is shifted down, feet stay put, no scaling or resampling), so each pose's content ratio matches
+  its ink counterpart (0.842-0.919). The 24 sword-dance frames already fill their canvases in both sets and
+  are untouched; `idle` already matched and is untouched too.
+- **Result**: standing-pose height difference 21.3px -> **0.7px (0.3%)**, width within 2% (compound
+  differences such as `ledger` aside); click-area error down from 8% to under 2%. Asset size +12%
+  (about +190 KB across the white set), still fully inlined, no network calls.
+- Tool: `tools/pad_white_top.py` (`--dry-run` to preview, `--apply` to write; targets come from the ink
+  set per pose).
+
 ## 4.31.0 · 2026-11-20 · The About panel gains a community-group QR code
 
 - The bottom of the About panel used to show the donation code alone; it is now **two columns side by side**:
