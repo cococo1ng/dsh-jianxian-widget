@@ -208,6 +208,9 @@ window.__ModuleLoader__.load({
     // v4.27.5：新接的 8 件（talisman10）改按 28px 下的实际墨迹覆盖率标定——
     // 目标取老 14 件渲染后的中位数 0.323，二分反解 scale，再钳 0.85–1.25。
     // 细长件（剑匣 / 剑穗）撑到上限，整块大件（玉简 / 丹炉 / 冰魄珠 / 青莲）落 0.85。
+    // v4.31.2：盒子从 58px 收到 42px —— 58px 时可见中位 52px，而人物头部只 38px 宽
+    //（270px 容器下量出来的），法宝比头大 37%，人物就显得小。42px 时可见中位 37px，
+    // 与头宽持平；fit 系数不动（它管的是 22 件之间的相对平衡，不是绝对大小）。
     const TALISMAN_FIT = {
       compass: 0.86, mirror: 0.87, bell: 0.87, fuchen: 0.87, seal: 0.89, ruyi: 0.89,
       pouch: 0.93, lamp: 1.00, banner: 1.03, tally: 1.05, fan: 1.08, gourd: 1.09,
@@ -508,9 +511,9 @@ window.__ModuleLoader__.load({
       '.xjj-slash{position:absolute;bottom:40%;left:50%;width:136px;height:6px;margin-left:-68px;border-radius:6px;background:linear-gradient(90deg,rgba(255,255,255,0),#f2feff 45%,rgba(255,255,255,0));box-shadow:0 0 16px rgba(200,244,255,.95);animation:xjj-slash .62s ease-out both;pointer-events:none}',
       '.xjj-slash.b{height:4px;width:110px;margin-left:-55px;bottom:52%;animation-delay:.08s}',
       '@keyframes xjj-slash{0%{opacity:0;transform:translate(-46%,6px) rotate(-17deg) scaleX(.35)}26%{opacity:1}100%{opacity:0;transform:translate(46%,-16px) rotate(-17deg) scaleX(1.05)}}',
-      '.xjj-gear{position:absolute;right:20px;bottom:calc(100% + var(--yo, 0px) - var(--gear-base, 15px));margin-bottom:var(--gear-mb, 2px);z-index:9;width:64px;height:64px;padding:0;border:0;background:transparent;pointer-events:auto;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .16s ease,opacity .16s ease;outline:none}',
+      '.xjj-gear{position:absolute;right:20px;bottom:calc(100% + var(--yo, 0px) - var(--gear-base, 15px));margin-bottom:var(--gear-mb, 2px);z-index:9;width:64px;height:64px;padding:0 0 3px;box-sizing:border-box;border:0;background:transparent;pointer-events:auto;cursor:pointer;display:flex;align-items:flex-end;justify-content:center;transition:transform .16s ease,opacity .16s ease;outline:none}',
       '.xjj-gear:hover{transform:translateY(-1px) scale(1.08) rotate(-4deg);filter:drop-shadow(0 3px 9px rgba(217,164,65,.55));opacity:1}',
-      '.xjj-tal{width:58px;height:58px;object-fit:contain;pointer-events:none;user-select:none}',
+      '.xjj-tal{width:42px;height:42px;object-fit:contain;pointer-events:none;user-select:none}',
       '.xjj-gear:hover .xjj-tal{filter:drop-shadow(0 0 6px rgba(217,164,65,.7))}',
       '.xjj-root:hover .xjj-gear{opacity:.92}',
       '.xjj-panel{position:absolute;right:0;bottom:calc(100% + var(--yo, 0px) + 44px);margin-bottom:6px;display:flex;flex-direction:column;isolation:isolate;width:272px;max-height:56vh;background:linear-gradient(180deg,var(--xjj-panel-a),var(--xjj-panel-b));border:1px solid var(--xjj-border);border-radius:12px;box-shadow:var(--xjj-shadow);pointer-events:auto;z-index:9;overflow:hidden;font-family:"Microsoft YaHei","PingFang SC",sans-serif}',

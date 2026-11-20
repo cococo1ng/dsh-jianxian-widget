@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         青云剑仙 · Azure Cloud Sword Immortal
 // @namespace    xjj-widget
-// @version      4.31.1
+// @version      4.31.2
 // @description  网页右下角的青云剑仙：白发墨金的大师兄，23 姿态 + 24 帧剑舞 + 14 件法宝 + 10 路音效，会催你喝水、劝你早睡、闲了剑舞御剑。全部素材内联，不联网、不上报、不占 token。
 // @author       Azure Cloud Sword Immortal
 // @match        *://*/*
@@ -39,12 +39,12 @@
  * 数据落点：localStorage（配置、微量账本），不联网、不上报。
  * 余额 / 账本 / 提问提醒在网页版里没有数据源 —— 状态里如实留空，界面显示「—」。
  *
- * 由 build.py 注入 4.31.1 后拼进 dist/xjj.user.js；DSH 版不使用本文件。
+ * 由 build.py 注入 4.31.2 后拼进 dist/xjj.user.js；DSH 版不使用本文件。
  */
 window.__XJJ_HOST__ = (function () {
   'use strict'
 
-  var VERSION = '4.31.1'
+  var VERSION = '4.31.2'
   var KEY_CFG = 'xjj.cfg.v1'
   var KEY_STATE = 'xjj.state.v1'
 
@@ -600,6 +600,9 @@ window.__XJJ_HOST__ = (function () {
     // v4.27.5：新接的 8 件（talisman10）改按 28px 下的实际墨迹覆盖率标定——
     // 目标取老 14 件渲染后的中位数 0.323，二分反解 scale，再钳 0.85–1.25。
     // 细长件（剑匣 / 剑穗）撑到上限，整块大件（玉简 / 丹炉 / 冰魄珠 / 青莲）落 0.85。
+    // v4.31.2：盒子从 58px 收到 42px —— 58px 时可见中位 52px，而人物头部只 38px 宽
+    //（270px 容器下量出来的），法宝比头大 37%，人物就显得小。42px 时可见中位 37px，
+    // 与头宽持平；fit 系数不动（它管的是 22 件之间的相对平衡，不是绝对大小）。
     const TALISMAN_FIT = {
       compass: 0.86, mirror: 0.87, bell: 0.87, fuchen: 0.87, seal: 0.89, ruyi: 0.89,
       pouch: 0.93, lamp: 1.00, banner: 1.03, tally: 1.05, fan: 1.08, gourd: 1.09,
@@ -900,9 +903,9 @@ window.__XJJ_HOST__ = (function () {
       '.xjj-slash{position:absolute;bottom:40%;left:50%;width:136px;height:6px;margin-left:-68px;border-radius:6px;background:linear-gradient(90deg,rgba(255,255,255,0),#f2feff 45%,rgba(255,255,255,0));box-shadow:0 0 16px rgba(200,244,255,.95);animation:xjj-slash .62s ease-out both;pointer-events:none}',
       '.xjj-slash.b{height:4px;width:110px;margin-left:-55px;bottom:52%;animation-delay:.08s}',
       '@keyframes xjj-slash{0%{opacity:0;transform:translate(-46%,6px) rotate(-17deg) scaleX(.35)}26%{opacity:1}100%{opacity:0;transform:translate(46%,-16px) rotate(-17deg) scaleX(1.05)}}',
-      '.xjj-gear{position:absolute;right:20px;bottom:calc(100% + var(--yo, 0px) - var(--gear-base, 15px));margin-bottom:var(--gear-mb, 2px);z-index:9;width:64px;height:64px;padding:0;border:0;background:transparent;pointer-events:auto;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .16s ease,opacity .16s ease;outline:none}',
+      '.xjj-gear{position:absolute;right:20px;bottom:calc(100% + var(--yo, 0px) - var(--gear-base, 15px));margin-bottom:var(--gear-mb, 2px);z-index:9;width:64px;height:64px;padding:0 0 3px;box-sizing:border-box;border:0;background:transparent;pointer-events:auto;cursor:pointer;display:flex;align-items:flex-end;justify-content:center;transition:transform .16s ease,opacity .16s ease;outline:none}',
       '.xjj-gear:hover{transform:translateY(-1px) scale(1.08) rotate(-4deg);filter:drop-shadow(0 3px 9px rgba(217,164,65,.55));opacity:1}',
-      '.xjj-tal{width:58px;height:58px;object-fit:contain;pointer-events:none;user-select:none}',
+      '.xjj-tal{width:42px;height:42px;object-fit:contain;pointer-events:none;user-select:none}',
       '.xjj-gear:hover .xjj-tal{filter:drop-shadow(0 0 6px rgba(217,164,65,.7))}',
       '.xjj-root:hover .xjj-gear{opacity:.92}',
       '.xjj-panel{position:absolute;right:0;bottom:calc(100% + var(--yo, 0px) + 44px);margin-bottom:6px;display:flex;flex-direction:column;isolation:isolate;width:272px;max-height:56vh;background:linear-gradient(180deg,var(--xjj-panel-a),var(--xjj-panel-b));border:1px solid var(--xjj-border);border-radius:12px;box-shadow:var(--xjj-shadow);pointer-events:auto;z-index:9;overflow:hidden;font-family:"Microsoft YaHei","PingFang SC",sans-serif}',
@@ -3023,7 +3026,7 @@ window.__XJJ_HOST__ = (function () {
             showSpecial([{ style: { fontSize: 11.5 }, modules: [{ type: 'text', text: __xjjT('路径已复制：') + p }] }], 6000);
           })),
           Row(__xjjT('自检'), Btn(__xjjT('产物 / 构建'), () => { setMenuOpen(false); showAbout(); })),
-          Row(__xjjT('版本'), h('b', { className: 'xjj-val', style: { color: 'var(--xjj-text-strong)' } }, 'v4.31.1')),
+          Row(__xjjT('版本'), h('b', { className: 'xjj-val', style: { color: 'var(--xjj-text-strong)' } }, 'v4.31.2')),
         ];
       })();
 
@@ -3382,7 +3385,7 @@ window.__XJJ_HOST__ = (function () {
             h('span', null, __xjjT('青云剑仙')),
             h('button', { className: 'xjj-mini', onClick: () => setAboutOpen(false) }, __xjjT('关闭'))),
           h('div', { className: 'xjj-ed-body xjj-ab-body' },
-            h('div', { className: 'xjj-ab-sub' }, __xjjT('黑衣与白衣双衣装 · 中英双语 · DSH 桌面挂件'), ' · v4.31.1'),
+            h('div', { className: 'xjj-ab-sub' }, __xjjT('黑衣与白衣双衣装 · 中英双语 · DSH 桌面挂件'), ' · v4.31.2'),
             h('p', { className: 'xjj-ab-lead' }, __xjjT('常驻屏幕右下角：盯余额、记消耗，也会催你早点睡')),
             h('div', { className: 'xjj-ab-sec' }, __xjjT('<能做什么>')),
             h('div', { className: 'xjj-ab-row' },

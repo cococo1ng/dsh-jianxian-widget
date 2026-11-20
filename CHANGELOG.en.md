@@ -3,6 +3,25 @@
 User-visible changes. Versions follow [SemVer](https://semver.org/).
 Versions before 4.19.2 are documented in the Chinese [CHANGELOG.md](CHANGELOG.md).
 
+## 4.31.2 · 2026-11-20 · The talisman icon shrinks so it stops dwarfing the figure
+
+- **Symptom**: the talisman above the head read as bigger than the character — the figure looked small,
+  the icon looked large, and the whole thing felt off.
+- **Measured**: inside the widget the figure's head (hair included) is a median **38px** wide
+  (32-49px; poses with a raised arm read wider because the arm enters the head band). The icon used a
+  58px box times `TALISMAN_FIT` (0.85-1.25), giving a median visible edge of **52px, up to 72px** —
+  37% wider than the head, and 55% of the ~95px shoulder width.
+- **Cause**: `TALISMAN_FIT` was calibrated for "ink coverage 0.323 at 28px", which balances the 22 icons
+  **against each other**; the 58px **box base** was never calibrated against the figure, so the 28px
+  picker scale was simply carried over to the widget at full size.
+- **Fix**: one dimension only — the `.xjj-tal` box goes 58px -> **42px** (median visible 52px -> 37px,
+  level with the head width) with every `TALISMAN_FIT` value left untouched. The hit area stays 64x64 so
+  it remains easy to click, and the icon now sits flush to the button's bottom edge (`align-items:flex-end`
+  plus 3px bottom padding) so its lower edge lands exactly where it did before — the 9px gap to the head
+  and the geometry gate assertions are unchanged.
+- **Result**: median icon edge 37px against a 38px head, i.e. about 1.0; the largest icons
+  (sword case / flute / vase / tassel) drop from 72px to 52px.
+
 ## 4.31.1 · 2026-11-20 · The white robe is no longer a head taller than the ink one
 
 - **Symptom**: switching to the white robe made the figure clearly taller — its head touched the widget's
