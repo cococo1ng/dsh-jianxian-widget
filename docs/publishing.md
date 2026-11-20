@@ -6,7 +6,7 @@
 |---|---|---|
 | 0 | `python build.py --target all` → `npm test` → `python scripts/release.py` | 全绿才往下（release.py 会把下面几步再打印一遍） |
 | 1 | 改版本号 4 处 + CHANGELOG 中英 + 打两个 zip | README 版本在**表格行**，正文提到旧版号不算错 |
-| 2 | `git commit` + `git tag vX.Y.Z` + push main 与 tag | 直连就行，不用代理 |
+| 2 | `git commit` + `git tag vX.Y.Z` + push main 与 tag | 直连就行，不用代理。**但本机 git 全局配了 `http.proxy=127.0.0.1:57777`**：代理没开时 push 报 `Failed to connect to github.com port 443 via 127.0.0.1`，用 `git -c http.proxy= -c https.proxy= push origin main` 绕过（别为此改全局配置） |
 | 3 | npm：token → 临时 npmrc → publish → **删 token** | 发完 registry 要 **≈6 分钟**才见到新版本，别急着判失败 |
 | 4 | deepseek.stream 插件市场：编辑 → 传 zip → **点「确认发布新版本并就地更新 (vX.Y.Z)」** | 按钮会从「保存修改并即时生效」变名字，点旧的等于没点 |
 | 5 | skillhub.cn Skill：发布/更新 → 传 zip → **图标切「自定义」传 plugin/icon.png** | ⚠️ **默认是平台预设的紫色方块**，不切就永远显示占位图 —— logo 白设计了 |
