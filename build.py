@@ -227,6 +227,43 @@ def read_version():
     return version
 
 
+LOCALE_DIR = os.path.join(ROOT, "plugin", "locale")
+
+
+def sync_locale_meta(write=True):
+    """把 package.json 的 description 写成 locale/zh.json 的 meta.description。
+
+    为什么必须机器写：DSH 插件卡片读的是插件导出的 locale/<语言>.json 里的 meta，
+    package.json 只做英文兜底（见 @deepseek-ai/dsh-app-boot/src/package-meta.ts 的
+    readPluginMeta + dsh-client-locale 的 resolveText）。中文界面取 zh 键，于是
+    「改了 package.json、忘了改 locale」的结果就是卡片永远显示上一版文案——E-143。
+    英文那句是人写的译文，机器不覆盖，只核它还在不在。
+    """
+    pkg = json.load(open(PKG, encoding="utf-8"))
+    desc = str(pkg.get("description") or "").strip()
+    if not desc:
+        fail("package.json 缺 description：卡片描述会空着")
+    zh_path = os.path.join(LOCALE_DIR, "zh.json")
+    zh = json.load(open(zh_path, encoding="utf-8"))
+    meta = zh.setdefault("meta", {})
+    if meta.get("title") != zh.get("title"):
+        fail("locale/zh.json 的 meta.title 与顶层 title 不一致（readPluginMeta 只读 meta）：%r / %r"
+             % (meta.get("title"), zh.get("title")))
+    changed = meta.get("description") != desc or zh.get("description") != desc
+    if changed and write:
+        meta["description"] = desc
+        zh["description"] = desc
+        atomic_write(zh_path, json.dumps(zh, ensure_ascii=False, indent=2) + "\n")
+    en_path = os.path.join(LOCALE_DIR, "en.json")
+    en = json.load(open(en_path, encoding="utf-8"))
+    en_meta = en.get("meta") or {}
+    if not str(en_meta.get("description") or "").strip():
+        fail("locale/en.json 缺 meta.description（英文卡片会退化成包名）")
+    if en_meta.get("title") != en.get("title"):
+        fail("locale/en.json 的 meta.title 与顶层 title 不一致：%r / %r" % (en_meta.get("title"), en.get("title")))
+    return {"zhSynced": changed, "enManual": True, "descriptionLen": len(desc)}
+
+
 def load_template():
     template = open(SRC, encoding="utf-8").read()
     # 姿态清单要在素材内联之前抽：内联后 'idle': '__POSE_…__' 已经变成 data URI
@@ -473,6 +510,7 @@ def main(argv):
     table = load_lang("en")
     template, sizes = load_template()
     report = {"version": version, "count": len(sizes), "target": target, "dict": len(table)}
+    report["locale"] = sync_locale_meta()
     if target in ("dsh", "all"):
         report.update(build_dsh(template, version, table))
     if target in ("web", "all"):
