@@ -13,6 +13,38 @@
 | 6 | 更新已有 Skill 时：Skill 文件必填（无新 zip 点「复用当前版本」）、变更说明必填 | 缺任何一项，「更新 Skill」点下去**静默无反应** |
 | 7 | 平台状态回报：deepseek.stream「待审核」/ skillhub.cn「安全审核中」 | 图标与版本都要过审才公开 |
 
+## 一键发版流程（2026-11-20 固化）
+
+四个平台上架点，各有脚本兜住"上传 + 填表 + 提交"，只有密码/确认这类要人工的地方会停下来。
+
+```bash
+# ① 改版本号（4 处）+ CHANGELOG 中英，然后
+python build.py --target all
+npm test                                  # 10 道闸，exit 0 才往下
+python scripts/release.py                 # 出 tgz + SHA256 + RELEASE-NOTES
+
+# ② 打两个 zip + 自检 + 写发布配置（= npm run pack）
+python scripts/pack_all.py --plugin-notes "本次改了什么" --skill-notes "Skill 侧改了什么"
+
+# ③ 三个上架脚本，各自读 _publish/publish-target.json
+ego-browser nodejs -e "await import('file:///<repo>/scripts/ego/deepseek-plugin.mjs')"
+ego-browser nodejs -e "await import('file:///<repo>/scripts/ego/deepseek-skill.mjs')"
+ego-browser nodejs -e "await import('file:///<repo>/scripts/ego/skillhub-skill.mjs')"
+
+# ④ npm（要 token，见下）
+# ⑤ git commit + tag + push
+```
+
+| 脚本 | 干什么 | 自检/拦截 |
+|---|---|---|
+| `scripts/pack_all.py` | 打插件 zip（11 文件）与 Skill zip（5 个文本）、写 `publish-target.json` | 两个 package.json 版本一致；SKILL.md frontmatter 有 slug/name/title/category/whenToUse/version；插件包无 `src/` / `test/` / `*.bak`；Skill 包无二进制；两个包不超 10 MB |
+| `scripts/ego/deepseek-plugin.mjs` | 打开插件详情 → 编辑抽屉 → 传 zip → 填版本 → 点「确认发布新版本并就地更新」 | 平台回显的「真实版本」必须等于目标版本，否则退出；按钮没改名（版本号没填进去）也会退出 |
+| `scripts/ego/deepseek-skill.mjs` | 打开 Skill 管理 → 编辑 → 传 SKILL.md → 更新日志 → 保存并提交审核 | 先在 Node 里核 frontmatter：缺 title/whenToUse/category 或 `version` ≠ 目标版本直接退出，不浪费一次提交 |
+| `scripts/ego/skillhub-skill.mjs` | dashboard → 青云剑仙卡片「更新」→ 传 zip → 版本号/变更说明 → 更新 Skill | 等"正在上传并检查"消失才继续；打印图标区状态（应为自定义 + 有图）；提交后核对是否出现「安全审核中」 |
+
+**跑之前想清楚**：这三个脚本是真提交，每跑一次就多一条历史版本并重新进审核。只在真要发版时跑。
+`publish-target.json` 由 `pack_all.py` 生成，改版本号只需重跑它，脚本不用改。
+
 > 图标不是装饰：`plugin/icon.png`（512×512）就是插件在客户端、市场列表、Skill 详情页的脸。
 > 每上传一次带图标的版本，都得在图标区确认显示的是剑仙立绘（不是紫色方块、不是旧版图）。
 >

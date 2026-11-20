@@ -22,7 +22,8 @@
     "test:config": "node --test test-config-merge.mjs",
     "test:docs": "node check-docs.mjs",
     "test:surface": "node scripts/audit-completeness.mjs",
-    "test:tokens": "node scripts/tool-surface.mjs && node scripts/tool-surface.mjs --selftest"
+    "test:tokens": "node scripts/tool-surface.mjs && node scripts/tool-surface.mjs --selftest",
+    "pack": "python scripts/pack_all.py"
   },
   "keywords": [
     "dsh-plugin",
