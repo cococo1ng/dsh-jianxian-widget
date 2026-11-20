@@ -16,28 +16,34 @@
 > 图标不是装饰：`plugin/icon.png`（512×512）就是插件在客户端、市场列表、Skill 详情页的脸。
 > 每上传一次带图标的版本，都得在图标区确认显示的是剑仙立绘（不是紫色方块、不是旧版图）。
 >
-> **当前状态（2026-11-20 01:45）**
+> **当前状态（2026-11-20 22:50）**
 >
-> - **GitHub**：main `c3a6591`、tag `v4.31.0` 已推（直连可用，**不用带代理**）
-> - **npm latest**：`dsh-jianxian-widget@4.31.0`（2026-11-19 17:04 UTC 发出）
->   https://www.npmjs.com/package/dsh-jianxian-widget
->   11 个文件 / 5.2 MB tgz / 7.0 MB 解包，shasum `c8d4ca6884c0557b61b055630825d050c63fe81a`
->   —— 这次用 granular token（Bypass 2FA 勾上**没有**弹密码，直接生成）+ 临时 npmrc 发出，
->   **发完已在网页删掉**（回显「deleted 1 token」），本地临时 npmrc 与 token 文件均已删
-> - **npm 发布后别急着报错**：`npm publish` 打印 `+ pkg@ver` 之后，registry 要**约 6 分钟**才见得到新版本；
->   这中间 `npm view` 一直报旧 latest、`@ver` 404、Staged Packages 页也是空的（不是 staged，就是慢）。
->   判断标准只有一条：直接读 `registry.npmjs.org/<pkg>` 的 `dist-tags.latest` 与 `time.modified`
-> - **SkillHub（skillhub.cn，腾讯）**：skill `qingyun-jianxian` **V1.4.1 安全审核中**（1.4.0 已发布，
->   4.6 优秀 / 77 下载；1.4.1 只是补图标）
->   https://skillhub.cn/dashboard （我的 Skills）
->   发布路径：`/dashboard/publish` → 发布 Skill → 拖入含 `SKILL.md` 的 zip（≤200 文件 / ≤10 MB）
->   → 填 Slug / 显示名 / 版本 / 变更说明 → 提交审核
-> - **skillhub.cn 的三个坑（2026-11-20 实测）**：
+> - **GitHub**：main `f7ff4ae`、tag **v4.31.2** 已推（直连可用，**不用带代理**）
+>   本轮三个提交：`30217b5` locale meta 自动同步 / `f117d40` 白衣补白 / `206cc95` 法宝缩小 / `f7ff4ae` 市场图重出
+> - **npm latest**：`dsh-jianxian-widget@4.31.2`（2026-11-20 14:44 UTC 生效）
+>   11 个文件 / 5.1 MB tgz / 6.9 MB 解包，shasum `a3f5387c42d850b5cc46dab180b21910e822f392`
+>   —— granular token（Bypass 2FA + Read and write + All packages + 7 天）+ 临时 npmrc 发布，
+>   **发完已在网页删 token**（列表回到 `Rows 1 to 0 of 0`），本地 token 文件与 npmrc 均已删
+> - **npm 延迟实测（2026-11-20，npm 12.2.1）**：`npm publish` 打印 `+ pkg@ver` 之后，
+>   `registry.npmjs.org/<pkg>` 的 `dist-tags.latest` 要 **约 4–6 分钟**才翻到新版本；
+>   tarball 更慢一层：`/<pkg>/-/<pkg>-<ver>.tgz` 不带查询串仍 **404**，加 `?t=<时间戳>` 立刻 **200**。
+>   **不要在这几分钟里判失败、更不要重复发布** —— 判据只有一条：直接读 packument 的 `dist-tags.latest`
+> - **SkillHub（skillhub.cn，腾讯）**：skill `qingyun-jianxian` **v1.4.2 安全审核中**（1.4.1 已发布，91 下载）
+>   https://skillhub.cn/dashboard （我的 Skills → 青云剑仙卡片 → 更新）
+>   - 本轮上传包：`_publish/skillhub-cn-qingyun-jianxian-1.4.2.zip`（5 个文本文件 31.3 KB）
+>   - 变更说明、版本号（1.4.2，平台自动 +1）、描述、分类（AI Agent / 工具调用）、图标（自定义·剑仙立绘）均已核对
+> - **skillhub.cn 的四个坑（2026-11-20 实测补充）**：
 >   1. **图标默认是「预设图标」**（紫色方块占位），不切「自定义」就永远是占位图 —— 首次发布就是这么丢了 logo。
 >      要切「自定义」→「点击上传图片」→ 选 png（64×64 ~ 4096×4096，≤5 MB）→ 弹层里再点一次「上传」；
 >   2. 更新时 **Skill 文件是必填**：没传新 zip 就点「复用当前版本」，否则点「更新 Skill」静默无反应；
 >   3. 更新时**变更说明必填**、版本号平台会自动 +1（1.4.0 → 1.4.1）；只改图标也必须走一次「更新」并重新审核。
 >   图标上传后要过合规审核才公开展示，所以刚提交时详情页看到的还是旧图/占位图。
+>   4. **zip 里不要放 `icon.png`**（2026-11-20 实测）：平台会弹「部分文件被跳过 · 不支持的文件类型:
+>      icon.png（禁止上传二进制文件）」，即 Skill 包只收文本；图标只走「自定义」那个独立上传位。
+>      打包命令只打 5 个文本文件（SKILL.md / README.md / 3 个 references）。
+> - **SkillHub 的「更新」入口**（实测）：dashboard 卡片上的「更新」是 `<span onclick>` 而不是 button/a，
+>   用 `innerText === "更新"` 找 `<button>` 找不到；要点卡片里那个 span。弹窗打开后
+>   `input[type=file]` 只在上传前存在，一旦选过文件就消失（改文件要先点「重新上传（清空）」）。
 > - **SkillHub 的 Plugin 广场没有提交入口**（2026-11-20 实测）：整页只有 `owner/repo` 索引与本机安装提示，
 >   全是 GitHub 收录制，页面底部只有「建议反馈」。要上插件广场只能走反馈申请或等官方索引，
 >   **不是漏做，是没门**
