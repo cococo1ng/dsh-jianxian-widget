@@ -48,8 +48,17 @@
 >   全是 GitHub 收录制，页面底部只有「建议反馈」。要上插件广场只能走反馈申请或等官方索引，
 >   **不是漏做，是没门**
 > - **deepseek.stream（DeepSeek Harness Hub，另一个站，别和 SkillHub 混）**：
->   插件 `dsh-jianxian-widget` **v4.31.0 待审核**（描述已更新为含按会话 / 本月 / 对账 / 交流群）；
->   Skill `qingyun-jianxian` **1.4.0 待审核**
+>   插件 `dsh-jianxian-widget` **v4.31.2 待审核**（`_publish/dsh-jianxian-widget-4.31.2.zip` 4.90 MB，
+>   在详情页「✏️ 编辑插件」抽屉里「更新上传插件安装包」上传 → 填新版本号 → 按钮会自己改名为
+>   **「确认发布新版本并就地更新 (vX.Y.Z)」**，点它才生效）；Skill `qingyun-jianxian` **v1.4.2 待审核**
+> - **deepseek.stream 的 Skill 只能传单个 `SKILL.md`**（2026-11-20 实测）：`input[type=file]` 只收
+>   `.md/.txt/.yaml/.yml`，不是 zip；`references/*.md` 不会跟着过去（那几个文件只存在于 SkillHub 的包里）。
+> - **frontmatter 的 version 必须等于表单里填的版本号**，否则提交被拦，报
+>   「frontmatter 的 name/version 必须与 Skill ID 和版本一致」：改版本 = 先改 SKILL.md 里的
+>   `version:`，再上传让表单自动回填，别只改表单字段。
+> - **两站的版本号机制不一样**：SkillHub 读的是「版本号」输入框（默认 = 上次 +1，所以 1.4.1 的包提交后显示
+>   1.4.2）；deepseek.stream 直接用 frontmatter 里的原值。**源 SKILL.md 的 `version` 一律写对外版本**
+>   （现在是 1.4.2），两站才不会各说各话。
 > - **awesome-dsh-plugin**（DSH 客户端市场索引）：条目已收录，`url` 指向 `main/plugin`，
 >   装到的就是最新 main
 > - 发布顺序：build → `npm test` → `scripts/release.py` → git commit/tag/push →
